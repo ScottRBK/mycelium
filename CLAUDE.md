@@ -9,9 +9,9 @@ Mycelium is a CLI static analysis tool that produces a JSON structural map of a 
 ```bash
 uv sync                                      # Install dependencies
 uv run pytest                                 # Run all tests (332 pass)
-uv run mycelium analyze <path>                # Analyse a repo
-uv run mycelium analyze <path> --verbose      # With phase timing breakdown
-uv run mycelium analyze <path> --quiet        # No output except errors
+uv run mycelium-map analyze <path>            # Analyse a repo
+uv run mycelium-map analyze <path> --verbose  # With phase timing breakdown
+uv run mycelium-map analyze <path> --quiet    # No output except errors
 ```
 
 ## Architecture

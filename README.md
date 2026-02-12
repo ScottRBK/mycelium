@@ -169,9 +169,24 @@ Execution flows traced from entry points (controllers, handlers, main functions)
 
 `total_confidence` is the product of all edge confidences along the path.
 
-## Tests
+## Development
 
 ```bash
-uv run pytest           # 229 tests
+uv sync                 # Install dependencies
+uv run pytest           # Run tests
 uv run pytest -v        # Verbose output
 ```
+
+## Releasing
+
+Releases are automated via GitHub Actions. Push a semver tag to trigger a release:
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+This will:
+1. Update the version in `pyproject.toml` to match the tag
+2. Commit the version bump back to `master`
+3. Build and publish the package to PyPI
