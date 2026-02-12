@@ -1,6 +1,6 @@
 [project]
 name = "mycelium-map"
-version = "0.1.1"
+version = "0.2.0"
 description = "Static analysis tool that maps the hidden network of connections in codebases"
 readme = "README.md"
 requires-python = ">=3.12"
