@@ -9,9 +9,13 @@ wheels/
 # Virtual environments
 .venv
 
-
 # Rust
 target/
+
+# Native extensions
+*.so
+*.pyd
+*.dylib
 
 # mycelium files
 *.mycelium.json

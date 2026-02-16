@@ -84,7 +84,7 @@ pub fn build_result(
     );
     metadata.insert(
         "mycelium_version".to_string(),
-        serde_json::Value::String("0.1.1".to_string()),
+        serde_json::Value::String(env!("CARGO_PKG_VERSION").to_string()),
     );
     if let Some(hash) = get_commit_hash(&config.repo_path) {
         metadata.insert("commit_hash".to_string(), serde_json::Value::String(hash));

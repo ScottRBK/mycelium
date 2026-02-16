@@ -1,6 +1,6 @@
 [package]
 name = "mycelium-cli"
-version = "0.1.1"
+version = "1.0.0"
 edition = "2021"
 description = "CLI for Mycelium static analysis tool"
 license = "MIT"

@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import click
 
-from mycelium.config import AnalysisConfig
-from mycelium.output import write_output
-from mycelium.pipeline import run_pipeline
+from mycelium._mycelium_rust import analyze, PyAnalysisConfig
 
 
 @click.group()
@@ -17,7 +16,7 @@ def cli() -> None:
     pass
 
 
-def _run_with_progress(config: AnalysisConfig):
+def _run_with_progress(config: PyAnalysisConfig):
     """Run the pipeline with Rich progress display."""
     from rich.console import Console
     from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
@@ -37,11 +36,12 @@ def _run_with_progress(config: AnalysisConfig):
         def on_phase(name, label):
             progress.update(task, description=label)
 
-        result = run_pipeline(config, progress_callback=on_phase)
+        result = analyze(config.repo_path, config, progress=on_phase)
 
     # Summary table
-    stats = result.stats
-    timings = result.metadata.get("phase_timings", {})
+    stats = result.get("stats", {})
+    metadata = result.get("metadata", {})
+    timings = metadata.get("phase_timings", {})
 
     table = Table(title=f"Mycelium Analysis: {Path(config.repo_path).name}", show_edge=False)
     table.add_column("Metric", style="bold")
@@ -58,7 +58,7 @@ def _run_with_progress(config: AnalysisConfig):
         lang_str = ", ".join(f"{k}: {v}" for k, v in sorted(langs.items()))
         table.add_row("Languages", lang_str)
 
-    duration = result.metadata.get("analysis_duration_ms", 0)
+    duration = metadata.get("analysis_duration_ms", 0)
     table.add_row("Duration", f"{duration:.1f}ms")
 
     console.print(table)
@@ -74,12 +74,12 @@ def _run_with_progress(config: AnalysisConfig):
     return result
 
 
-def _run_quiet(config: AnalysisConfig):
+def _run_quiet(config: PyAnalysisConfig):
     """Run the pipeline with no output."""
-    return run_pipeline(config)
+    return analyze(config.repo_path, config)
 
 
-@cli.command()
+@cli.command("analyze")
 @click.argument("path", type=click.Path(exists=True))
 @click.option("-o", "--output", "output_path", default=None, help="Output JSON file path")
 @click.option("-l", "--languages", default=None, help="Comma-separated language filter")
@@ -89,7 +89,7 @@ def _run_quiet(config: AnalysisConfig):
 @click.option("--exclude", multiple=True, help="Additional glob patterns to exclude")
 @click.option("--verbose", is_flag=True, help="Show per-phase timing breakdown")
 @click.option("--quiet", is_flag=True, help="Suppress all output except errors")
-def analyze(
+def analyze_cmd(
     path: str,
     output_path: str | None,
     languages: str | None,
@@ -108,9 +108,9 @@ def analyze(
 
     lang_filter = None
     if languages:
-        lang_filter = [l.strip() for l in languages.split(",")]
+        lang_filter = [lang.strip() for lang in languages.split(",")]
 
-    config = AnalysisConfig(
+    config = PyAnalysisConfig(
         repo_path=str(repo_path),
         output_path=output_path,
         languages=lang_filter,
@@ -127,7 +127,10 @@ def analyze(
     else:
         result = _run_with_progress(config)
 
-    write_output(result, output_path)
+    # Write output JSON
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(result, indent=2))
 
     if not quiet:
         from rich.console import Console

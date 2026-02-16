@@ -10,38 +10,96 @@ permissions:
   id-token: write
 
 jobs:
-  update-version:
-    name: Update version & publish
-    runs-on: ubuntu-latest
+  build-wheels:
+    name: Build wheels (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
     environment: pypi
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Update versions
+        shell: bash
+        run: |
+          sed -i.bak "s/^version = \".*\"/version = \"${{ steps.version.outputs.version }}\"/" pyproject.toml
+          for f in crates/mycelium-core/Cargo.toml crates/mycelium-cli/Cargo.toml crates/mycelium-python/Cargo.toml; do
+            sed -i.bak "s/^version = \".*\"/version = \"${{ steps.version.outputs.version }}\"/" "$f"
+          done
+
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
         with:
-          ref: master
-          token: ${{ secrets.GITHUB_TOKEN }}
+          target: ${{ matrix.target }}
+          args: --release --out dist
+          manylinux: auto
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.target }}
+          path: dist
+
+  build-sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Extract version from tag
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Update pyproject.toml version
+      - name: Update versions
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ steps.version.outputs.version }}\"/" pyproject.toml
+          for f in crates/mycelium-core/Cargo.toml crates/mycelium-cli/Cargo.toml crates/mycelium-python/Cargo.toml; do
+            sed -i "s/^version = \".*\"/version = \"${{ steps.version.outputs.version }}\"/" "$f"
+          done
 
-      - name: Commit version bump
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pyproject.toml
-          git diff --cached --quiet || git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
-          git push origin master
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
 
-      - name: Build package
-        run: uv build
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [build-wheels, build-sdist]
+    environment: pypi
+
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

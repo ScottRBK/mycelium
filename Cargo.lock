@@ -432,7 +432,7 @@ dependencies = [
 
 [[package]]
 name = "mycelium-cli"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "clap",
  "console",
@@ -443,7 +443,7 @@ dependencies = [
 
 [[package]]
 name = "mycelium-core"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "chrono",
  "log",
@@ -469,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "mycelium-python"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "mycelium-core",
  "pyo3",

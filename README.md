@@ -2,17 +2,15 @@
 
 Static analysis CLI that maps the connections in a source code repository. Produces a single JSON file containing file structure, symbols, imports, call graph, community clusters, and execution flows.
 
+Powered by a Rust engine with tree-sitter parsing, exposed to Python via PyO3.
+
 ## Install
-
-```bash
-uvx mycelium-map
-```
-
-Or install locally:
 
 ```bash
 pip install mycelium-map
 ```
+
+Pre-built binary wheels are available for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64). Source builds require a Rust toolchain.
 
 ## Usage
 
@@ -29,6 +27,15 @@ mycelium-map analyze <path> --max-depth 8            # Limit BFS trace depth
 ```
 
 Default output file: `<repo-name>.mycelium.json`
+
+### Python API
+
+```python
+from mycelium import analyze
+
+result = analyze("path/to/repo")
+print(result["stats"])
+```
 
 ## Supported Languages
 
@@ -56,7 +63,7 @@ The JSON output contains these top-level sections:
   "repo_name": "my-project",
   "repo_path": "/absolute/path",
   "analysed_at": "2026-02-05T18:33:12Z",
-  "mycelium_version": "0.1.0",
+  "mycelium_version": "1.0.0",
   "commit_hash": "a1b2c3d4e5f6",
   "analysis_duration_ms": 42.3,
   "phase_timings": { "structure": 0.004, "parsing": 0.001, ... }
@@ -172,9 +179,18 @@ Execution flows traced from entry points (controllers, handlers, main functions)
 ## Development
 
 ```bash
-uv sync                 # Install dependencies
-uv run pytest           # Run tests
-uv run pytest -v        # Verbose output
+# Rust tests
+cargo test --workspace
+
+# Build Python bindings locally
+pip install maturin
+maturin develop --release
+
+# Run binding tests
+pytest tests/test_bindings.py -v
+
+# Rust CLI (alternative to Python CLI)
+cargo run -p mycelium-cli -- analyze <path>
 ```
 
 ## Releasing
@@ -182,11 +198,11 @@ uv run pytest -v        # Verbose output
 Releases are automated via GitHub Actions. Push a semver tag to trigger a release:
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
 This will:
-1. Update the version in `pyproject.toml` to match the tag
-2. Commit the version bump back to `master`
-3. Build and publish the package to PyPI
+1. Build binary wheels for Linux, macOS, and Windows
+2. Build a source distribution
+3. Publish all to PyPI

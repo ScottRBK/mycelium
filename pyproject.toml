@@ -1,46 +1,32 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
 [project]
 name = "mycelium-map"
-version = "0.2.0"
+version = "1.0.0"
 description = "Static analysis tool that maps the hidden network of connections in codebases"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
-authors = [
-    { name = "Scott", email = "scott.raisbeck1985@gmail.com" },
-]
-urls = { Homepage = "https://github.com/ScottRBK/mycelium", Repository = "https://github.com/ScottRBK/mycelium" }
-dependencies = [
-    "tree-sitter>=0.24.0",
-    "tree-sitter-c-sharp>=0.23.1",
-    "tree-sitter-typescript>=0.23.2",
-    "tree-sitter-javascript>=0.23.1",
-    "tree-sitter-python>=0.23.6",
-    "tree-sitter-java>=0.23.5",
-    "tree-sitter-go>=0.23.4",
-    "tree-sitter-rust>=0.23.2",
-    "tree-sitter-c>=0.23.4",
-    "tree-sitter-cpp>=0.23.4",
-    "networkx>=3.4",
-    "click>=8.1",
-    "rich>=13.0",
-]
+authors = [{ name = "Scott", email = "scott.raisbeck1985@gmail.com" }]
+dependencies = ["click>=8.1", "rich>=13.0"]
+
+[project.urls]
+Homepage = "https://github.com/ScottRBK/mycelium"
+Repository = "https://github.com/ScottRBK/mycelium"
 
 [project.scripts]
 mycelium-map = "mycelium.cli:cli"
 
 [dependency-groups]
-dev = [
-    "pytest>=8.0",
-    "pytest-cov>=6.0",
-    "tree-sitter-vb-dotnet @ git+https://github.com/ScottRBK/tree-sitter-vb-dotnet.git",
-]
+dev = ["pytest>=8.0"]
 
-[tool.hatch.build.targets.wheel]
-packages = ["mycelium"]
-
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.maturin]
+manifest-path = "crates/mycelium-python/Cargo.toml"
+module-name = "mycelium._mycelium_rust"
+python-source = "."
+python-packages = ["mycelium"]
+bindings = "pyo3"
+strip = true
+features = ["pyo3/extension-module"]

@@ -112,8 +112,13 @@ impl From<PyAnalysisConfig> for AnalysisConfig {
 
 /// Analyse a source code repository and return the result as a Python dict.
 #[pyfunction]
-#[pyo3(signature = (path, config = None))]
-fn analyze(py: Python<'_>, path: &str, config: Option<PyAnalysisConfig>) -> PyResult<Py<PyDict>> {
+#[pyo3(signature = (path, config = None, progress = None))]
+fn analyze(
+    py: Python<'_>,
+    path: &str,
+    config: Option<PyAnalysisConfig>,
+    progress: Option<PyObject>,
+) -> PyResult<Py<PyDict>> {
     let analysis_config = match config {
         Some(c) => {
             let mut cfg: AnalysisConfig = c.into();
@@ -126,7 +131,16 @@ fn analyze(py: Python<'_>, path: &str, config: Option<PyAnalysisConfig>) -> PyRe
         },
     };
 
-    let result = pipeline::run_pipeline(&analysis_config, None)
+    // Wrap the Python callable as a Rust ProgressCallback
+    let progress_callback = progress.map(|py_cb| -> pipeline::ProgressCallback {
+        Box::new(move |phase: &str, label: &str| {
+            Python::with_gil(|py| {
+                let _ = py_cb.call1(py, (phase, label));
+            });
+        })
+    });
+
+    let result = pipeline::run_pipeline(&analysis_config, progress_callback)
         .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
 
     // Serialize to JSON then parse into Python dict
@@ -141,10 +155,17 @@ fn analyze(py: Python<'_>, path: &str, config: Option<PyAnalysisConfig>) -> PyRe
     Ok(py_dict)
 }
 
+/// Return the Mycelium engine version.
+#[pyfunction]
+fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
 /// Mycelium Rust analysis engine.
 #[pymodule]
 fn _mycelium_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(analyze, m)?)?;
+    m.add_function(wrap_pyfunction!(version, m)?)?;
     m.add_class::<PyAnalysisConfig>()?;
     Ok(())
 }
