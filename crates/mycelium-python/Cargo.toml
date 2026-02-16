@@ -1,0 +1,15 @@
+[package]
+name = "mycelium-python"
+version = "0.1.1"
+edition = "2021"
+description = "Python bindings for Mycelium static analysis tool"
+license = "MIT"
+
+[lib]
+name = "_mycelium_rust"
+crate-type = ["cdylib"]
+
+[dependencies]
+mycelium-core = { path = "../mycelium-core" }
+pyo3 = { version = "0.23", features = ["extension-module"] }
+serde_json = "1"

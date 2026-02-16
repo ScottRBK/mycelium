@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "crates/mycelium-core",
+    "crates/mycelium-cli",
+    "crates/mycelium-python",
+]
+resolver = "2"
