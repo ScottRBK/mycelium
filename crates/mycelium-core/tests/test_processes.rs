@@ -23,16 +23,8 @@ fn process_has_entry_and_terminal() {
     let r = run_all_phases("csharp_simple");
     let processes = r.kg.get_processes();
     for (id, entry, terminal, _, _, _) in &processes {
-        assert!(
-            !entry.is_empty(),
-            "Process {} should have entry point",
-            id
-        );
-        assert!(
-            !terminal.is_empty(),
-            "Process {} should have terminal",
-            id
-        );
+        assert!(!entry.is_empty(), "Process {} should have entry point", id);
+        assert!(!terminal.is_empty(), "Process {} should have terminal", id);
     }
 }
 
@@ -85,7 +77,8 @@ fn scoring_excludes_test_files() {
     let r = run_four_phases("csharp_simple");
     let scored = score_entry_points(&r.kg);
     let syms = r.kg.get_symbols();
-    let sym_map: std::collections::HashMap<_, _> = syms.iter().map(|s| (s.id.as_str(), s)).collect();
+    let sym_map: std::collections::HashMap<_, _> =
+        syms.iter().map(|s| (s.id.as_str(), s)).collect();
     for (id, _) in &scored {
         if let Some(sym) = sym_map.get(id.as_str()) {
             assert!(

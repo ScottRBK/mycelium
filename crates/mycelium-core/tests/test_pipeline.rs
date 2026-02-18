@@ -17,7 +17,10 @@ fn pipeline_runs_all_phases() {
     };
     let result = mycelium_core::pipeline::run_pipeline(&config, None).unwrap();
     assert_eq!(result.version, "1.0");
-    assert!(!result.symbols.is_empty(), "Pipeline should produce symbols");
+    assert!(
+        !result.symbols.is_empty(),
+        "Pipeline should produce symbols"
+    );
 }
 
 #[test]
@@ -28,10 +31,9 @@ fn pipeline_with_progress_callback() {
         ..Default::default()
     };
     let mut phases_seen = Vec::new();
-    let callback: mycelium_core::pipeline::ProgressCallback =
-        Box::new(move |phase, _label| {
-            phases_seen.push(phase.to_string());
-        });
+    let callback: mycelium_core::pipeline::ProgressCallback = Box::new(move |phase, _label| {
+        phases_seen.push(phase.to_string());
+    });
     let result = mycelium_core::pipeline::run_pipeline(&config, Some(callback)).unwrap();
     assert!(!result.symbols.is_empty());
 }
@@ -59,7 +61,14 @@ fn pipeline_stats() {
     };
     let result = mycelium_core::pipeline::run_pipeline(&config, None).unwrap();
     let expected_keys = [
-        "files", "folders", "symbols", "calls", "imports", "communities", "processes", "languages",
+        "files",
+        "folders",
+        "symbols",
+        "calls",
+        "imports",
+        "communities",
+        "processes",
+        "languages",
     ];
     for key in &expected_keys {
         assert!(result.stats.contains_key(*key), "Missing stat key: {key}");

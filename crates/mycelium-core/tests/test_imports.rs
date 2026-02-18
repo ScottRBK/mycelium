@@ -93,10 +93,7 @@ fn dotnet_project_ref_target() {
     let has_vb_ref = proj_refs
         .iter()
         .any(|(_, to, _)| to.contains("VBNet") || to.contains("vbproj"));
-    assert!(
-        has_vb_ref,
-        "CSharp project should reference VBNet project"
-    );
+    assert!(has_vb_ref, "CSharp project should reference VBNet project");
 }
 
 // ===========================================================================
@@ -189,7 +186,10 @@ fn python_simple_imports() {
 fn python_import_resolution() {
     let r = run_three_phases("python_simple");
     let edges = r.kg.get_import_edges();
-    assert!(!edges.is_empty(), "Should resolve Python imports to file edges");
+    assert!(
+        !edges.is_empty(),
+        "Should resolve Python imports to file edges"
+    );
 }
 
 #[test]
@@ -205,13 +205,13 @@ fn python_self_import_excluded() {
 fn python_service_to_repository() {
     let r = run_three_phases("python_simple");
     let edges = r.kg.get_import_edges();
-    let has_service_repo = edges.iter().any(|(from, to, _)| {
-        from.contains("service") && to.contains("repository")
-    });
+    let has_service_repo = edges
+        .iter()
+        .any(|(from, to, _)| from.contains("service") && to.contains("repository"));
     // service imports from repository
-    let has_service_models = edges.iter().any(|(from, to, _)| {
-        from.contains("service") && to.contains("models")
-    });
+    let has_service_models = edges
+        .iter()
+        .any(|(from, to, _)| from.contains("service") && to.contains("models"));
     assert!(
         has_service_repo || has_service_models,
         "service.py should import from repository.py or models.py"
@@ -222,9 +222,9 @@ fn python_service_to_repository() {
 fn python_handler_imports_service() {
     let r = run_three_phases("python_simple");
     let edges = r.kg.get_import_edges();
-    let has_handler_service = edges.iter().any(|(from, to, _)| {
-        from.contains("handler") && to.contains("service")
-    });
+    let has_handler_service = edges
+        .iter()
+        .any(|(from, to, _)| from.contains("handler") && to.contains("service"));
     assert!(has_handler_service, "handler.py should import service.py");
 }
 
@@ -242,9 +242,9 @@ fn python_package_imports() {
 fn python_relative_imports() {
     // user_service.py has relative imports (..models.item)
     let imports = parse_file_imports("python_package", "app/services/user_service.py");
-    let has_relative = imports.iter().any(|i| {
-        i.target_name.starts_with('.') || i.statement.contains("from .")
-    });
+    let has_relative = imports
+        .iter()
+        .any(|i| i.target_name.starts_with('.') || i.statement.contains("from ."));
     assert!(has_relative, "Should have relative imports in package");
 }
 
@@ -253,9 +253,9 @@ fn python_dotted_path_resolution() {
     let r = run_three_phases("python_package");
     let edges = r.kg.get_import_edges();
     // user_service imports from models
-    let service_to_models = edges.iter().any(|(from, to, _)| {
-        from.contains("user_service") && to.contains("models")
-    });
+    let service_to_models = edges
+        .iter()
+        .any(|(from, to, _)| from.contains("user_service") && to.contains("models"));
     let _ = service_to_models;
 }
 
@@ -301,7 +301,11 @@ fn ts_extension_probing() {
     let edges = r.kg.get_import_edges();
     // All resolved targets should be actual .ts files
     for (_, to, _) in &edges {
-        assert!(to.ends_with(".ts"), "Resolved import should end in .ts: {}", to);
+        assert!(
+            to.ends_with(".ts"),
+            "Resolved import should end in .ts: {}",
+            to
+        );
     }
 }
 
@@ -355,9 +359,9 @@ fn java_package_import_resolution() {
 fn java_controller_imports_service() {
     let r = run_three_phases("java_package");
     let edges = r.kg.get_import_edges();
-    let has_ctrl_svc = edges.iter().any(|(from, to, _)| {
-        from.contains("UserController") && to.contains("UserService")
-    });
+    let has_ctrl_svc = edges
+        .iter()
+        .any(|(from, to, _)| from.contains("UserController") && to.contains("UserService"));
     assert!(
         has_ctrl_svc,
         "UserController.java should import UserService.java"
@@ -368,9 +372,9 @@ fn java_controller_imports_service() {
 fn java_controller_imports_model() {
     let r = run_three_phases("java_package");
     let edges = r.kg.get_import_edges();
-    let has_ctrl_model = edges.iter().any(|(from, to, _)| {
-        from.contains("UserController") && to.contains("User.java")
-    });
+    let has_ctrl_model = edges
+        .iter()
+        .any(|(from, to, _)| from.contains("UserController") && to.contains("User.java"));
     assert!(
         has_ctrl_model,
         "UserController.java should import User.java"
@@ -410,7 +414,10 @@ fn java_basename_fallback() {
 
 #[test]
 fn java_dotted_path_import() {
-    let imports = parse_file_imports("java_package", "com/example/controllers/UserController.java");
+    let imports = parse_file_imports(
+        "java_package",
+        "com/example/controllers/UserController.java",
+    );
     assert!(
         imports
             .iter()
@@ -449,9 +456,9 @@ fn go_stdlib_excluded() {
 fn go_main_imports_service() {
     let r = run_three_phases("go_package");
     let edges = r.kg.get_import_edges();
-    let has_main_svc = edges.iter().any(|(from, to, _)| {
-        from.contains("main.go") && to.contains("service")
-    });
+    let has_main_svc = edges
+        .iter()
+        .any(|(from, to, _)| from.contains("main.go") && to.contains("service"));
     assert!(has_main_svc, "main.go should import service package");
 }
 
@@ -459,9 +466,9 @@ fn go_main_imports_service() {
 fn go_service_imports_model() {
     let r = run_three_phases("go_package");
     let edges = r.kg.get_import_edges();
-    let has_svc_model = edges.iter().any(|(from, to, _)| {
-        from.contains("service") && to.contains("model")
-    });
+    let has_svc_model = edges
+        .iter()
+        .any(|(from, to, _)| from.contains("service") && to.contains("model"));
     assert!(has_svc_model, "service.go should import model package");
 }
 
@@ -472,10 +479,7 @@ fn go_service_imports_model() {
 #[test]
 fn rust_use_declarations() {
     let imports = parse_file_imports("rust_simple", "main.rs");
-    assert!(
-        !imports.is_empty(),
-        "Should extract Rust use declarations"
-    );
+    assert!(!imports.is_empty(), "Should extract Rust use declarations");
 }
 
 #[test]
@@ -514,13 +518,10 @@ fn rust_self_import_excluded() {
 fn rust_main_imports_service() {
     let r = run_three_phases("rust_simple");
     let edges = r.kg.get_import_edges();
-    let has_main_svc = edges.iter().any(|(from, to, _)| {
-        from.contains("main") && to.contains("service")
-    });
-    assert!(
-        has_main_svc,
-        "main.rs should import service.rs"
-    );
+    let has_main_svc = edges
+        .iter()
+        .any(|(from, to, _)| from.contains("main") && to.contains("service"));
+    assert!(has_main_svc, "main.rs should import service.rs");
 }
 
 // ===========================================================================
@@ -531,10 +532,7 @@ fn rust_main_imports_service() {
 fn c_include_resolution() {
     let r = run_three_phases("c_simple");
     let edges = r.kg.get_import_edges();
-    assert!(
-        !edges.is_empty(),
-        "Should resolve C #include to file edges"
-    );
+    assert!(!edges.is_empty(), "Should resolve C #include to file edges");
 }
 
 #[test]
@@ -598,9 +596,9 @@ fn cpp_include_resolution() {
 fn cpp_handler_includes_service() {
     let r = run_three_phases("cpp_simple");
     let edges = r.kg.get_import_edges();
-    let has_svc = edges.iter().any(|(from, to, _)| {
-        from.contains("handler") && to.contains("service")
-    });
+    let has_svc = edges
+        .iter()
+        .any(|(from, to, _)| from.contains("handler") && to.contains("service"));
     assert!(has_svc, "handler.cpp should include service.hpp");
 }
 

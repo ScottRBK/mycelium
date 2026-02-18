@@ -121,10 +121,7 @@ fn di_constructor_params_tracked() {
 fn di_resolved_calls() {
     let r = run_four_phases("csharp_simple");
     let edges = r.kg.get_call_edges();
-    let di_edges: Vec<_> = edges
-        .iter()
-        .filter(|e| e.4.contains("di"))
-        .collect();
+    let di_edges: Vec<_> = edges.iter().filter(|e| e.4.contains("di")).collect();
     // DI resolution may or may not produce edges depending on fixture structure
     let _ = di_edges;
 }
@@ -157,10 +154,7 @@ fn interface_methods_present() {
 fn impl_resolved_calls() {
     let r = run_four_phases("csharp_simple");
     let edges = r.kg.get_call_edges();
-    let impl_edges: Vec<_> = edges
-        .iter()
-        .filter(|e| e.4.contains("impl"))
-        .collect();
+    let impl_edges: Vec<_> = edges.iter().filter(|e| e.4.contains("impl")).collect();
     // Interface-to-impl resolution may or may not fire
     let _ = impl_edges;
 }

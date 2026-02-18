@@ -637,25 +637,20 @@ mod tests {
     #[test]
     fn louvain_fully_connected() {
         // Fully connected graph should produce 1 community
-        let adj = build_test_adj(&[
-            ("a", "b", 1.0),
-            ("b", "c", 1.0),
-            ("a", "c", 1.0),
-        ]);
+        let adj = build_test_adj(&[("a", "b", 1.0), ("b", "c", 1.0), ("a", "c", 1.0)]);
         let communities = louvain(&adj, 1.0);
         assert_eq!(communities.len(), 1);
     }
 
     #[test]
     fn compute_cohesion_complete() {
-        let adj = build_test_adj(&[
-            ("a", "b", 1.0),
-            ("b", "c", 1.0),
-            ("a", "c", 1.0),
-        ]);
+        let adj = build_test_adj(&[("a", "b", 1.0), ("b", "c", 1.0), ("a", "c", 1.0)]);
         let members: Vec<String> = vec!["a".into(), "b".into(), "c".into()];
         let cohesion = compute_cohesion(&members, &adj);
-        assert!((cohesion - 1.0).abs() < 0.01, "Complete graph cohesion = 1.0");
+        assert!(
+            (cohesion - 1.0).abs() < 0.01,
+            "Complete graph cohesion = 1.0"
+        );
     }
 
     #[test]

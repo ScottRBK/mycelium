@@ -44,11 +44,7 @@ pub fn run_calls_phase(
             }
         }
 
-        let ext = file_path
-            .rsplit('.')
-            .next()
-            .unwrap_or("")
-            .to_string();
+        let ext = file_path.rsplit('.').next().unwrap_or("").to_string();
 
         let analyser = match registry.get_by_extension(&ext) {
             Some(a) => a,

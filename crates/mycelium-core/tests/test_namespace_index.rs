@@ -32,7 +32,10 @@ fn namespace_maps_to_files() {
             break;
         }
     }
-    assert!(any_ns, "At least one C# file should have namespace registrations");
+    assert!(
+        any_ns,
+        "At least one C# file should have namespace registrations"
+    );
 }
 
 #[test]

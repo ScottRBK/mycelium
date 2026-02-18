@@ -19,11 +19,7 @@ fn community_has_members() {
     let r = run_all_phases("csharp_simple");
     let communities = r.kg.get_communities();
     for (id, _label, members, _, _) in &communities {
-        assert!(
-            !members.is_empty(),
-            "Community {} should have members",
-            id
-        );
+        assert!(!members.is_empty(), "Community {} should have members", id);
     }
 }
 

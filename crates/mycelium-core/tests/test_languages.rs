@@ -15,7 +15,10 @@ use mycelium_core::config::{SymbolType, Visibility};
 #[test]
 fn ts_extracts_classes() {
     let syms = parse_file_symbols("typescript_simple", "controller.ts");
-    let classes: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Class).collect();
+    let classes: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Class)
+        .collect();
     assert!(!classes.is_empty(), "Should extract TypeScript classes");
     assert!(classes.iter().any(|s| s.name == "UserController"));
 }
@@ -23,7 +26,10 @@ fn ts_extracts_classes() {
 #[test]
 fn ts_extracts_interfaces() {
     let syms = parse_file_symbols("typescript_simple", "models.ts");
-    let ifaces: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Interface).collect();
+    let ifaces: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Interface)
+        .collect();
     assert!(!ifaces.is_empty(), "Should extract TypeScript interfaces");
     assert!(ifaces.iter().any(|s| s.name == "User"));
 }
@@ -31,7 +37,10 @@ fn ts_extracts_interfaces() {
 #[test]
 fn ts_extracts_enums() {
     let syms = parse_file_symbols("typescript_simple", "models.ts");
-    let enums: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Enum).collect();
+    let enums: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Enum)
+        .collect();
     assert!(!enums.is_empty(), "Should extract TypeScript enums");
     assert!(enums.iter().any(|s| s.name == "UserRole"));
 }
@@ -39,9 +48,14 @@ fn ts_extracts_enums() {
 #[test]
 fn ts_extracts_functions() {
     let syms = parse_file_symbols("typescript_simple", "utils.ts");
-    let funcs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Function).collect();
+    let funcs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Function)
+        .collect();
     assert!(!funcs.is_empty(), "Should extract TypeScript functions");
-    assert!(funcs.iter().any(|s| s.name == "hashPassword" || s.name == "validateEmail"));
+    assert!(funcs
+        .iter()
+        .any(|s| s.name == "hashPassword" || s.name == "validateEmail"));
 }
 
 #[test]
@@ -60,7 +74,10 @@ fn ts_extracts_type_aliases() {
 #[test]
 fn ts_extracts_methods() {
     let syms = parse_file_symbols("typescript_simple", "controller.ts");
-    let methods: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Method).collect();
+    let methods: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Method)
+        .collect();
     assert!(!methods.is_empty(), "Should extract class methods");
 }
 
@@ -186,9 +203,7 @@ fn ts_file_attribute() {
 fn ts_property_extraction() {
     let syms = parse_file_symbols("typescript_simple", "models.ts");
     // Models may have property-like declarations
-    let has_props = syms
-        .iter()
-        .any(|s| s.symbol_type == SymbolType::Property);
+    let has_props = syms.iter().any(|s| s.symbol_type == SymbolType::Property);
     let _ = has_props;
 }
 
@@ -243,7 +258,10 @@ fn ts_index_exports() {
 #[test]
 fn ts_utils_exported() {
     let syms = parse_file_symbols("typescript_simple", "utils.ts");
-    let funcs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Function).collect();
+    let funcs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Function)
+        .collect();
     assert!(!funcs.is_empty());
 }
 
@@ -261,7 +279,10 @@ fn ts_import_targets() {
 #[test]
 fn py_extracts_classes() {
     let syms = parse_file_symbols("python_simple", "handler.py");
-    let classes: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Class).collect();
+    let classes: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Class)
+        .collect();
     assert!(!classes.is_empty(), "Should extract Python classes");
     assert!(classes.iter().any(|s| s.name == "RequestHandler"));
 }
@@ -269,14 +290,20 @@ fn py_extracts_classes() {
 #[test]
 fn py_extracts_functions() {
     let syms = parse_file_symbols("python_simple", "config.py");
-    let funcs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Function).collect();
+    let funcs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Function)
+        .collect();
     assert!(!funcs.is_empty(), "Should extract Python functions");
 }
 
 #[test]
 fn py_extracts_methods() {
     let syms = parse_file_symbols("python_simple", "handler.py");
-    let methods: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Method).collect();
+    let methods: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Method)
+        .collect();
     assert!(!methods.is_empty(), "Should extract Python methods");
 }
 
@@ -410,7 +437,10 @@ fn py_validators_symbols() {
 #[test]
 fn py_exception_classes() {
     let syms = parse_file_symbols("python_simple", "exceptions.py");
-    let classes: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Class).collect();
+    let classes: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Class)
+        .collect();
     assert!(classes.len() >= 2, "Should have multiple exception classes");
 }
 
@@ -448,7 +478,9 @@ fn py_service_calls() {
 fn py_import_from_statement() {
     let imports = parse_file_imports("python_simple", "handler.py");
     assert!(
-        imports.iter().any(|i| i.statement.contains("from") || i.target_name.contains("service")),
+        imports
+            .iter()
+            .any(|i| i.statement.contains("from") || i.target_name.contains("service")),
         "Should have from-import statements"
     );
 }
@@ -475,7 +507,10 @@ fn py_dunder_init_is_constructor() {
 #[test]
 fn java_extracts_classes() {
     let syms = parse_file_symbols("java_simple", "UserController.java");
-    let classes: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Class).collect();
+    let classes: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Class)
+        .collect();
     assert!(!classes.is_empty(), "Should extract Java classes");
     assert!(classes.iter().any(|s| s.name == "UserController"));
 }
@@ -494,7 +529,10 @@ fn java_extracts_interfaces() {
 #[test]
 fn java_extracts_methods() {
     let syms = parse_file_symbols("java_simple", "UserController.java");
-    let methods: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Method).collect();
+    let methods: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Method)
+        .collect();
     assert!(!methods.is_empty(), "Should extract Java methods");
 }
 
@@ -505,10 +543,7 @@ fn java_extracts_constructors() {
         .iter()
         .filter(|s| s.symbol_type == SymbolType::Constructor)
         .collect();
-    assert!(
-        !constructors.is_empty(),
-        "Should extract Java constructors"
-    );
+    assert!(!constructors.is_empty(), "Should extract Java constructors");
 }
 
 #[test]
@@ -536,9 +571,7 @@ fn java_private_visibility() {
 fn java_package_private() {
     let syms = parse_file_symbols("java_simple", "UserController.java");
     // Methods without explicit modifier default to internal (package-private)
-    let has_internal = syms
-        .iter()
-        .any(|s| s.visibility == Visibility::Internal);
+    let has_internal = syms.iter().any(|s| s.visibility == Visibility::Internal);
     let _ = has_internal;
 }
 
@@ -677,14 +710,20 @@ fn java_controller_methods() {
 #[test]
 fn go_extracts_functions() {
     let syms = parse_file_symbols("go_simple", "handler.go");
-    let funcs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Function).collect();
+    let funcs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Function)
+        .collect();
     assert!(!funcs.is_empty(), "Should extract Go functions");
 }
 
 #[test]
 fn go_extracts_structs() {
     let syms = parse_file_symbols("go_simple", "handler.go");
-    let structs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Struct).collect();
+    let structs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Struct)
+        .collect();
     assert!(!structs.is_empty(), "Should extract Go structs");
     assert!(structs.iter().any(|s| s.name == "Handler"));
 }
@@ -703,7 +742,10 @@ fn go_extracts_interfaces() {
 #[test]
 fn go_extracts_methods() {
     let syms = parse_file_symbols("go_simple", "service.go");
-    let methods: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Method).collect();
+    let methods: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Method)
+        .collect();
     assert!(!methods.is_empty(), "Should extract Go methods");
 }
 
@@ -773,7 +815,9 @@ fn go_builtin_exclusions() {
 fn go_model_structs() {
     let syms = parse_file_symbols("go_simple", "model.go");
     assert!(syms.iter().any(|s| s.name == "Item"));
-    assert!(syms.iter().any(|s| s.name == "ItemFilter" || s.name == "PaginatedResult"));
+    assert!(syms
+        .iter()
+        .any(|s| s.name == "ItemFilter" || s.name == "PaginatedResult"));
 }
 
 #[test]
@@ -862,14 +906,20 @@ fn go_model_new_item() {
 #[test]
 fn rust_extracts_functions() {
     let syms = parse_file_symbols("rust_simple", "main.rs");
-    let funcs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Function).collect();
+    let funcs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Function)
+        .collect();
     assert!(!funcs.is_empty(), "Should extract Rust functions");
 }
 
 #[test]
 fn rust_extracts_structs() {
     let syms = parse_file_symbols("rust_simple", "main.rs");
-    let structs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Struct).collect();
+    let structs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Struct)
+        .collect();
     assert!(!structs.is_empty(), "Should extract Rust structs");
     assert!(structs.iter().any(|s| s.name == "Handler"));
 }
@@ -877,7 +927,10 @@ fn rust_extracts_structs() {
 #[test]
 fn rust_extracts_enums() {
     let syms = parse_file_symbols("rust_simple", "error.rs");
-    let enums: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Enum).collect();
+    let enums: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Enum)
+        .collect();
     assert!(!enums.is_empty(), "Should extract Rust enums");
     assert!(enums.iter().any(|s| s.name == "AppError"));
 }
@@ -885,7 +938,10 @@ fn rust_extracts_enums() {
 #[test]
 fn rust_extracts_traits() {
     let syms = parse_file_symbols("rust_simple", "service.rs");
-    let traits: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Trait).collect();
+    let traits: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Trait)
+        .collect();
     assert!(!traits.is_empty(), "Should extract Rust traits");
     assert!(traits.iter().any(|s| s.name == "Repository"));
 }
@@ -893,7 +949,10 @@ fn rust_extracts_traits() {
 #[test]
 fn rust_extracts_impl_blocks() {
     let syms = parse_file_symbols("rust_simple", "service.rs");
-    let impls: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Impl).collect();
+    let impls: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Impl)
+        .collect();
     assert!(!impls.is_empty(), "Should extract Rust impl blocks");
 }
 
@@ -948,7 +1007,9 @@ fn rust_builtin_exclusions() {
     let registry = mycelium_core::languages::AnalyserRegistry::new();
     let analyser = registry.get_by_extension("rs").unwrap();
     let builtins = analyser.builtin_exclusions();
-    assert!(builtins.contains(&"println!".to_string()) || builtins.contains(&"println".to_string()));
+    assert!(
+        builtins.contains(&"println!".to_string()) || builtins.contains(&"println".to_string())
+    );
 }
 
 #[test]
@@ -1029,7 +1090,10 @@ fn rust_use_declarations() {
 #[test]
 fn c_extracts_functions() {
     let syms = parse_file_symbols("c_simple", "main.c");
-    let funcs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Function).collect();
+    let funcs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Function)
+        .collect();
     assert!(!funcs.is_empty(), "Should extract C functions");
     assert!(funcs.iter().any(|s| s.name == "main"));
 }
@@ -1074,7 +1138,11 @@ fn c_all_public() {
 fn c_all_exported() {
     let syms = parse_file_symbols("c_simple", "main.c");
     for sym in &syms {
-        assert!(sym.exported, "C symbols should all be exported: {}", sym.name);
+        assert!(
+            sym.exported,
+            "C symbols should all be exported: {}",
+            sym.name
+        );
     }
 }
 
@@ -1161,7 +1229,9 @@ fn c_main_function() {
 #[test]
 fn c_handle_functions() {
     let syms = parse_file_symbols("c_simple", "main.c");
-    assert!(syms.iter().any(|s| s.name == "handle_request" || s.name == "handle_create"));
+    assert!(syms
+        .iter()
+        .any(|s| s.name == "handle_request" || s.name == "handle_create"));
 }
 
 #[test]
@@ -1219,7 +1289,10 @@ fn c_header_language_tag() {
 #[test]
 fn cpp_extracts_classes() {
     let syms = parse_file_symbols("cpp_simple", "service.hpp");
-    let classes: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Class).collect();
+    let classes: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Class)
+        .collect();
     assert!(!classes.is_empty(), "Should extract C++ classes");
     assert!(classes.iter().any(|s| s.name == "DataService"));
 }
@@ -1237,21 +1310,30 @@ fn cpp_extracts_namespaces() {
 #[test]
 fn cpp_extracts_functions() {
     let syms = parse_file_symbols("cpp_simple", "main.cpp");
-    let funcs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Function).collect();
+    let funcs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Function)
+        .collect();
     assert!(!funcs.is_empty(), "Should extract C++ functions");
 }
 
 #[test]
 fn cpp_extracts_structs() {
     let syms = parse_file_symbols("cpp_simple", "models.hpp");
-    let structs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Struct).collect();
+    let structs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Struct)
+        .collect();
     assert!(!structs.is_empty(), "Should extract C++ structs");
 }
 
 #[test]
 fn cpp_extracts_enums() {
     let syms = parse_file_symbols("cpp_simple", "service.hpp");
-    let enums: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Enum).collect();
+    let enums: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Enum)
+        .collect();
     assert!(!enums.is_empty(), "Should extract C++ enums");
     assert!(enums.iter().any(|s| s.name == "Status"));
 }
@@ -1384,7 +1466,10 @@ fn vbnet_analyser_available() {
 #[test]
 fn vbnet_extracts_classes() {
     let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
-    let classes: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Class).collect();
+    let classes: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Class)
+        .collect();
     assert!(!classes.is_empty(), "Should extract VB.NET classes");
     assert!(classes.iter().any(|s| s.name == "Calculator"));
 }
@@ -1403,7 +1488,10 @@ fn vbnet_extracts_interfaces() {
 #[test]
 fn vbnet_extracts_enums() {
     let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
-    let enums: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Enum).collect();
+    let enums: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Enum)
+        .collect();
     assert!(!enums.is_empty(), "Should extract VB.NET enums");
     assert!(enums.iter().any(|s| s.name == "OperationType"));
 }
@@ -1411,7 +1499,10 @@ fn vbnet_extracts_enums() {
 #[test]
 fn vbnet_extracts_structs() {
     let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
-    let structs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Struct).collect();
+    let structs: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Struct)
+        .collect();
     assert!(!structs.is_empty(), "Should extract VB.NET structures");
     assert!(structs.iter().any(|s| s.name == "CalculationResult"));
 }
@@ -1419,7 +1510,10 @@ fn vbnet_extracts_structs() {
 #[test]
 fn vbnet_extracts_modules() {
     let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
-    let modules: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Module).collect();
+    let modules: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Module)
+        .collect();
     assert!(!modules.is_empty(), "Should extract VB.NET modules");
     assert!(modules.iter().any(|s| s.name == "MathHelpers"));
 }
@@ -1427,7 +1521,10 @@ fn vbnet_extracts_modules() {
 #[test]
 fn vbnet_extracts_methods() {
     let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
-    let methods: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Method).collect();
+    let methods: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Method)
+        .collect();
     assert!(!methods.is_empty(), "Should extract VB.NET methods");
     assert!(methods.iter().any(|s| s.name == "Calculate"));
 }
@@ -1490,7 +1587,10 @@ fn vbnet_friend_visibility() {
 #[test]
 fn vbnet_extracts_imports() {
     let imports = parse_file_imports("vbnet_simple", "Calculator.vb");
-    assert!(!imports.is_empty(), "Should extract VB.NET Imports statements");
+    assert!(
+        !imports.is_empty(),
+        "Should extract VB.NET Imports statements"
+    );
     assert!(
         imports.iter().any(|i| i.target_name.contains("System")),
         "Should import System"
@@ -1560,7 +1660,9 @@ fn vbnet_fixture_e2e() {
 #[test]
 fn registry_has_all_languages() {
     let registry = mycelium_core::languages::AnalyserRegistry::new();
-    let expected = vec!["cs", "vb", "ts", "tsx", "js", "jsx", "py", "java", "go", "rs", "c", "h", "cpp", "hpp"];
+    let expected = vec![
+        "cs", "vb", "ts", "tsx", "js", "jsx", "py", "java", "go", "rs", "c", "h", "cpp", "hpp",
+    ];
     for ext in expected {
         assert!(
             registry.get_by_extension(ext).is_some(),
@@ -1607,7 +1709,9 @@ fn e2e_typescript_full_pipeline() {
     let r = run_two_phases("typescript_simple");
     let names = symbol_names(&r.kg);
     assert!(!names.is_empty());
-    assert!(names.iter().any(|n| n.contains("User") || n.contains("Controller")));
+    assert!(names
+        .iter()
+        .any(|n| n.contains("User") || n.contains("Controller")));
 }
 
 #[test]
@@ -1615,7 +1719,9 @@ fn e2e_python_full_pipeline() {
     let r = run_two_phases("python_simple");
     let names = symbol_names(&r.kg);
     assert!(!names.is_empty());
-    assert!(names.iter().any(|n| n.contains("Handler") || n.contains("Service")));
+    assert!(names
+        .iter()
+        .any(|n| n.contains("Handler") || n.contains("Service")));
 }
 
 #[test]
@@ -1652,7 +1758,10 @@ fn e2e_vbnet_full_pipeline() {
 fn e2e_c_cpp_full_pipeline() {
     let r_c = run_two_phases("c_simple");
     let r_cpp = run_two_phases("cpp_simple");
-    assert!(r_c.kg.symbol_count() > 0, "C fixture should produce symbols");
+    assert!(
+        r_c.kg.symbol_count() > 0,
+        "C fixture should produce symbols"
+    );
     assert!(
         r_cpp.kg.symbol_count() > 0,
         "C++ fixture should produce symbols"

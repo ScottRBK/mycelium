@@ -261,12 +261,7 @@ mod tests {
     fn export_multiplier() {
         let mut kg = KnowledgeGraph::new();
         kg.add_symbol(&make_method("sym:Pub", "Run", "src/main.cs", true));
-        kg.add_symbol(&make_method(
-            "sym:Priv",
-            "RunPrivate",
-            "src/main.cs",
-            false,
-        ));
+        kg.add_symbol(&make_method("sym:Priv", "RunPrivate", "src/main.cs", false));
         kg.add_symbol(&make_method("sym:C", "Target", "src/target.cs", true));
         kg.add_call(&CallEdge {
             from_symbol: "sym:Pub".to_string(),
@@ -318,11 +313,7 @@ mod tests {
             line: 1,
         });
         let scores = score_entry_points(&kg);
-        let handler_score = scores
-            .iter()
-            .find(|(id, _)| id == "sym:Handler")
-            .unwrap()
-            .1;
+        let handler_score = scores.iter().find(|(id, _)| id == "sym:Handler").unwrap().1;
         let worker_score = scores.iter().find(|(id, _)| id == "sym:Worker").unwrap().1;
         assert!(
             handler_score > worker_score,
@@ -407,11 +398,7 @@ mod tests {
         });
         let scores = score_entry_points(&kg);
         let deep_score = scores.iter().find(|(id, _)| id == "sym:Deep").unwrap().1;
-        let shallow_score = scores
-            .iter()
-            .find(|(id, _)| id == "sym:Shallow")
-            .unwrap()
-            .1;
+        let shallow_score = scores.iter().find(|(id, _)| id == "sym:Shallow").unwrap().1;
         assert!(
             deep_score > shallow_score,
             "Deeper call chains should score higher"

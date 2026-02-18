@@ -82,11 +82,7 @@ fn node_to_symbol_type(node_type: &str) -> Option<SymbolType> {
 fn is_container(node_type: &str) -> bool {
     matches!(
         node_type,
-        "namespace_block"
-            | "class_block"
-            | "module_block"
-            | "structure_block"
-            | "interface_block"
+        "namespace_block" | "class_block" | "module_block" | "structure_block" | "interface_block"
     )
 }
 
@@ -257,9 +253,7 @@ impl VbNetAnalyser {
 
 fn extract_callee(node: &Node, source: &[u8]) -> (Option<String>, Option<String>) {
     // Try the "target" field first
-    let target = node
-        .child_by_field_name("target")
-        .or_else(|| node.child(0));
+    let target = node.child_by_field_name("target").or_else(|| node.child(0));
 
     let target = match target {
         Some(t) => t,
@@ -369,12 +363,7 @@ impl LanguageAnalyser for VbNetAnalyser {
         symbols
     }
 
-    fn extract_imports(
-        &self,
-        tree: &Tree,
-        source: &[u8],
-        file_path: &str,
-    ) -> Vec<ImportStatement> {
+    fn extract_imports(&self, tree: &Tree, source: &[u8], file_path: &str) -> Vec<ImportStatement> {
         let mut imports = Vec::new();
         let root = tree.root_node();
         for i in 0..root.child_count() {
@@ -383,11 +372,8 @@ impl LanguageAnalyser for VbNetAnalyser {
                     // Try the "namespace" field
                     if let Some(ns_node) = child.child_by_field_name("namespace") {
                         if let Ok(target) = ns_node.utf8_text(source) {
-                            let statement = child
-                                .utf8_text(source)
-                                .unwrap_or("")
-                                .trim()
-                                .to_string();
+                            let statement =
+                                child.utf8_text(source).unwrap_or("").trim().to_string();
                             imports.push(ImportStatement {
                                 file: file_path.to_string(),
                                 statement,

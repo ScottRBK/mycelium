@@ -30,7 +30,10 @@ fn csharp_extracts_classes() {
 fn csharp_extracts_interfaces() {
     let r = run_two_phases("csharp_simple");
     let syms = r.kg.get_symbols();
-    let interfaces: Vec<_> = syms.iter().filter(|s| s.symbol_type == "Interface").collect();
+    let interfaces: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == "Interface")
+        .collect();
     assert!(
         !interfaces.is_empty(),
         "Should extract interface declarations"
@@ -95,10 +98,7 @@ fn csharp_extracts_structs() {
 fn csharp_visibility_public() {
     let r = run_two_phases("csharp_simple");
     let syms = r.kg.get_symbols();
-    let controller = syms
-        .iter()
-        .find(|s| s.name == "AbsenceController")
-        .unwrap();
+    let controller = syms.iter().find(|s| s.name == "AbsenceController").unwrap();
     assert_eq!(controller.visibility, "public");
     assert!(controller.exported);
 }
@@ -131,7 +131,10 @@ fn csharp_parent_tracking() {
         .iter()
         .filter(|s| s.symbol_type == "Method" && s.parent.is_some())
         .collect();
-    assert!(!methods_with_parent.is_empty(), "Methods should have parent");
+    assert!(
+        !methods_with_parent.is_empty(),
+        "Methods should have parent"
+    );
 }
 
 #[test]
@@ -218,7 +221,10 @@ fn mixed_dotnet_extracts_csharp() {
         .iter()
         .filter(|s| s.language.as_deref() == Some("C#"))
         .collect();
-    assert!(!cs_syms.is_empty(), "Should extract C# symbols from mixed .NET project");
+    assert!(
+        !cs_syms.is_empty(),
+        "Should extract C# symbols from mixed .NET project"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -230,7 +236,9 @@ fn python_parsing_basic() {
     let r = run_two_phases("python_simple");
     let names = symbol_names(&r.kg);
     assert!(
-        names.iter().any(|n| n.contains("Service") || n.contains("Handler")),
+        names
+            .iter()
+            .any(|n| n.contains("Service") || n.contains("Handler")),
         "Should extract Python class/function names"
     );
 }

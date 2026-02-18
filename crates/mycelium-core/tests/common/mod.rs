@@ -82,12 +82,7 @@ pub fn run_three_phases(fixture_name: &str) -> PhaseResult {
 /// Run Phases 1-4 (structure + parsing + imports + calls) on a fixture directory.
 pub fn run_four_phases(fixture_name: &str) -> PhaseResult {
     let mut r = run_three_phases(fixture_name);
-    mycelium_core::phases::calls::run_calls_phase(
-        &r.config,
-        &mut r.kg,
-        &mut r.st,
-        &mut r.ns_index,
-    );
+    mycelium_core::phases::calls::run_calls_phase(&r.config, &mut r.kg, &mut r.st, &mut r.ns_index);
     r
 }
 
@@ -209,7 +204,9 @@ pub fn parse_file_symbols(
 
     let mut parser = tree_sitter::Parser::new();
     let language = analyser.get_language_for_ext(&ext);
-    parser.set_language(&language).expect("Failed to set language");
+    parser
+        .set_language(&language)
+        .expect("Failed to set language");
     let tree = parser.parse(&source, None).expect("Failed to parse");
 
     analyser.extract_symbols(&tree, &source, file_name)
@@ -234,7 +231,9 @@ pub fn parse_file_imports(
 
     let mut parser = tree_sitter::Parser::new();
     let language = analyser.get_language_for_ext(&ext);
-    parser.set_language(&language).expect("Failed to set language");
+    parser
+        .set_language(&language)
+        .expect("Failed to set language");
     let tree = parser.parse(&source, None).expect("Failed to parse");
 
     analyser.extract_imports(&tree, &source, file_name)
@@ -259,7 +258,9 @@ pub fn parse_file_calls(
 
     let mut parser = tree_sitter::Parser::new();
     let language = analyser.get_language_for_ext(&ext);
-    parser.set_language(&language).expect("Failed to set language");
+    parser
+        .set_language(&language)
+        .expect("Failed to set language");
     let tree = parser.parse(&source, None).expect("Failed to parse");
 
     analyser.extract_calls(&tree, &source, file_name)
