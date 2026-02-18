@@ -19,9 +19,6 @@ Repository = "https://github.com/ScottRBK/mycelium"
 [project.scripts]
 mycelium-map = "mycelium.cli:cli"
 
-[dependency-groups]
-dev = ["pytest>=8.0"]
-
 [tool.maturin]
 manifest-path = "crates/mycelium-python/Cargo.toml"
 module-name = "mycelium._mycelium_rust"
