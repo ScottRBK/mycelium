@@ -1367,17 +1367,189 @@ fn cpp_main_functions() {
 }
 
 // ===========================================================================
-// VB.NET skip (1 test)
+// VB.NET analyser (15 tests)
 // ===========================================================================
 
 #[test]
-fn vbnet_analyser_unavailable() {
-    // VB.NET analyser is not available, so its extension isn't registered in the map.
-    // get_by_extension returns None for unavailable analysers.
+fn vbnet_analyser_available() {
     let registry = mycelium_core::languages::AnalyserRegistry::new();
     assert!(
-        registry.get_by_extension("vb").is_none(),
-        "VB.NET analyser should not be registered when unavailable"
+        registry.get_by_extension("vb").is_some(),
+        "VB.NET analyser should be registered"
+    );
+    let analyser = registry.get_by_extension("vb").unwrap();
+    assert!(analyser.is_available());
+}
+
+#[test]
+fn vbnet_extracts_classes() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let classes: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Class).collect();
+    assert!(!classes.is_empty(), "Should extract VB.NET classes");
+    assert!(classes.iter().any(|s| s.name == "Calculator"));
+}
+
+#[test]
+fn vbnet_extracts_interfaces() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let ifaces: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Interface)
+        .collect();
+    assert!(!ifaces.is_empty(), "Should extract VB.NET interfaces");
+    assert!(ifaces.iter().any(|s| s.name == "ICalculator"));
+}
+
+#[test]
+fn vbnet_extracts_enums() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let enums: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Enum).collect();
+    assert!(!enums.is_empty(), "Should extract VB.NET enums");
+    assert!(enums.iter().any(|s| s.name == "OperationType"));
+}
+
+#[test]
+fn vbnet_extracts_structs() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let structs: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Struct).collect();
+    assert!(!structs.is_empty(), "Should extract VB.NET structures");
+    assert!(structs.iter().any(|s| s.name == "CalculationResult"));
+}
+
+#[test]
+fn vbnet_extracts_modules() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let modules: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Module).collect();
+    assert!(!modules.is_empty(), "Should extract VB.NET modules");
+    assert!(modules.iter().any(|s| s.name == "MathHelpers"));
+}
+
+#[test]
+fn vbnet_extracts_methods() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let methods: Vec<_> = syms.iter().filter(|s| s.symbol_type == SymbolType::Method).collect();
+    assert!(!methods.is_empty(), "Should extract VB.NET methods");
+    assert!(methods.iter().any(|s| s.name == "Calculate"));
+}
+
+#[test]
+fn vbnet_extracts_delegates() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let delegates: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Delegate)
+        .collect();
+    assert!(!delegates.is_empty(), "Should extract VB.NET delegates");
+    assert!(delegates.iter().any(|s| s.name == "OperationCompleted"));
+}
+
+#[test]
+fn vbnet_extracts_namespace() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let ns: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Namespace)
+        .collect();
+    assert!(!ns.is_empty(), "Should extract VB.NET namespaces");
+}
+
+#[test]
+fn vbnet_public_visibility() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let calculator = syms.iter().find(|s| s.name == "Calculator");
+    assert!(calculator.is_some(), "Should find Calculator class");
+    if let Some(calc) = calculator {
+        assert_eq!(calc.visibility, Visibility::Public);
+        assert!(calc.exported);
+    }
+}
+
+#[test]
+fn vbnet_private_visibility() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let private: Vec<_> = syms
+        .iter()
+        .filter(|s| s.visibility == Visibility::Private)
+        .collect();
+    assert!(!private.is_empty(), "Should have private symbols");
+}
+
+#[test]
+fn vbnet_friend_visibility() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let friend: Vec<_> = syms
+        .iter()
+        .filter(|s| s.visibility == Visibility::Internal)
+        .collect();
+    assert!(
+        !friend.is_empty(),
+        "Should map Friend to Internal visibility"
+    );
+}
+
+#[test]
+fn vbnet_extracts_imports() {
+    let imports = parse_file_imports("vbnet_simple", "Calculator.vb");
+    assert!(!imports.is_empty(), "Should extract VB.NET Imports statements");
+    assert!(
+        imports.iter().any(|i| i.target_name.contains("System")),
+        "Should import System"
+    );
+}
+
+#[test]
+fn vbnet_language_tag() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    for sym in &syms {
+        assert_eq!(sym.language.as_deref(), Some("VB.NET"));
+    }
+}
+
+#[test]
+fn vbnet_line_numbers() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    for sym in &syms {
+        assert!(sym.line > 0, "Line numbers should be > 0 for {}", sym.name);
+    }
+}
+
+#[test]
+fn vbnet_parent_tracking() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    let methods_with_parent: Vec<_> = syms
+        .iter()
+        .filter(|s| s.symbol_type == SymbolType::Method && s.parent.is_some())
+        .collect();
+    assert!(
+        !methods_with_parent.is_empty(),
+        "Methods should have parent tracking"
+    );
+}
+
+#[test]
+fn vbnet_file_attribute() {
+    let syms = parse_file_symbols("vbnet_simple", "Calculator.vb");
+    for sym in &syms {
+        assert_eq!(sym.file, "Calculator.vb");
+    }
+}
+
+#[test]
+fn vbnet_builtin_exclusions() {
+    let registry = mycelium_core::languages::AnalyserRegistry::new();
+    let analyser = registry.get_by_extension("vb").unwrap();
+    let builtins = analyser.builtin_exclusions();
+    assert!(builtins.contains(&"Console.WriteLine".to_string()));
+    assert!(builtins.contains(&"CType".to_string()));
+}
+
+#[test]
+fn vbnet_fixture_e2e() {
+    let r = run_two_phases("vbnet_simple");
+    let count = r.kg.symbol_count();
+    assert!(
+        count >= 5,
+        "vbnet_simple should have at least 5 symbols, got {count}"
     );
 }
 
@@ -1388,8 +1560,7 @@ fn vbnet_analyser_unavailable() {
 #[test]
 fn registry_has_all_languages() {
     let registry = mycelium_core::languages::AnalyserRegistry::new();
-    // VB.NET is excluded because it's unavailable
-    let expected = vec!["cs", "ts", "tsx", "js", "jsx", "py", "java", "go", "rs", "c", "h", "cpp", "hpp"];
+    let expected = vec!["cs", "vb", "ts", "tsx", "js", "jsx", "py", "java", "go", "rs", "c", "h", "cpp", "hpp"];
     for ext in expected {
         assert!(
             registry.get_by_extension(ext).is_some(),
@@ -1409,7 +1580,7 @@ fn registry_unknown_extension_returns_none() {
 #[test]
 fn registry_analysers_available() {
     let registry = mycelium_core::languages::AnalyserRegistry::new();
-    let available_exts = vec!["cs", "ts", "py", "java", "go", "rs", "c", "cpp"];
+    let available_exts = vec!["cs", "vb", "ts", "py", "java", "go", "rs", "c", "cpp"];
     for ext in available_exts {
         let analyser = registry.get_by_extension(ext).unwrap();
         assert!(
@@ -1467,6 +1638,14 @@ fn e2e_rust_full_pipeline() {
     let r = run_two_phases("rust_simple");
     let names = symbol_names(&r.kg);
     assert!(!names.is_empty());
+}
+
+#[test]
+fn e2e_vbnet_full_pipeline() {
+    let r = run_two_phases("vbnet_simple");
+    let names = symbol_names(&r.kg);
+    assert!(!names.is_empty());
+    assert!(names.iter().any(|n| n.contains("Calculator")));
 }
 
 #[test]

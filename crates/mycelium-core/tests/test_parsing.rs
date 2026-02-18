@@ -188,22 +188,21 @@ fn csharp_defines_edges() {
 }
 
 // ---------------------------------------------------------------------------
-// VB.NET skip (1 test)
+// VB.NET parsing (1 test)
 // ---------------------------------------------------------------------------
 
 #[test]
-fn vbnet_files_skipped_gracefully() {
-    // VB.NET grammar not available; parsing should skip .vb files without error
+fn vbnet_files_parsed_in_mixed_dotnet() {
+    // VB.NET grammar is now available; parsing should extract .vb symbols
     let r = run_two_phases("mixed_dotnet");
     let syms = r.kg.get_symbols();
-    // Should have C# symbols but no VB.NET symbols
     let vb_syms: Vec<_> = syms
         .iter()
         .filter(|s| s.language.as_deref() == Some("VB.NET"))
         .collect();
     assert!(
-        vb_syms.is_empty(),
-        "VB.NET symbols should not be extracted without grammar"
+        !vb_syms.is_empty(),
+        "VB.NET symbols should be extracted from mixed_dotnet fixture"
     );
 }
 

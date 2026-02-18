@@ -42,7 +42,7 @@ print(result["stats"])
 | Language | Extensions |
 |---|---|
 | C# | `.cs` |
-| VB.NET | `.vb` (requires grammar build) |
+| VB.NET | `.vb` |
 | TypeScript | `.ts`, `.tsx` |
 | JavaScript | `.js`, `.jsx`, `.mjs`, `.cjs` |
 | Python | `.py` |

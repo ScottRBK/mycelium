@@ -66,7 +66,7 @@ Each analyser in `languages/` implements the `LanguageAnalyser` trait: `language
 | File | Language(s) | Notes |
 |------|-------------|-------|
 | `csharp.rs` | C# | Namespace declarations, using directives, DI parameter type extraction |
-| `vbnet.rs` | VB.NET | Stub (`is_available() -> false`); grammar not yet vendored |
+| `vbnet.rs` | VB.NET | Vendored grammar (ABI 14) in `vendor/tree-sitter-vb-dotnet/` |
 | `typescript.rs` | TS, TSX, JS, JSX | Shared analyser for TypeScript/JavaScript family |
 | `python.rs` | Python | |
 | `java.rs` | Java | Visibility from modifiers node |
@@ -93,6 +93,6 @@ Each analyser in `languages/` implements the `LanguageAnalyser` trait: `language
 
 ## Known Limitations
 
-- VB.NET grammar not vendored; analyser returns `is_available() -> false`
+- VB.NET grammar vendored locally (`vendor/tree-sitter-vb-dotnet/`), regenerated for ABI 14 compatibility
 - No incremental analysis (full scan every run)
 - No `tsconfig.json` path alias resolution yet
