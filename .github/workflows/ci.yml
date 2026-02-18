@@ -52,11 +52,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Create virtualenv
+        run: python -m venv .venv
+
       - name: Install maturin and deps
-        run: pip install maturin pytest click rich
+        run: .venv/bin/pip install maturin pytest click rich
 
       - name: Build and install
-        run: maturin develop --release
+        run: .venv/bin/maturin develop --release
 
       - name: Run binding tests
-        run: pytest tests/test_bindings.py -v
+        run: .venv/bin/pytest tests/test_bindings.py -v
