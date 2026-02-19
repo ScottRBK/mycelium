@@ -4,6 +4,19 @@ Static analysis CLI that maps the connections in a source code repository. Produ
 
 Powered by a Rust engine with tree-sitter parsing, exposed to Python via PyO3.
 
+## What it produces
+
+Mycelium runs a six-phase pipeline over your source code and outputs a single JSON file:
+
+| Phase | What it does |
+|---|---|
+| **Structure** | Walks the file tree and records every file and folder — language, size, and line count. This is the skeleton of your repository. |
+| **Symbols** | Parses each source file into an AST using tree-sitter and extracts every named declaration — classes, methods, functions, interfaces, structs, enums, properties, constructors, and more. Each symbol includes its visibility, parent, and location. |
+| **Imports** | Resolves dependency edges between files by analysing import/using/require statements. For .NET projects it also extracts project references (`.csproj`/`.vbproj`) and NuGet package references. |
+| **Call Graph** | Identifies method and function calls within each file, then resolves them to their target symbols using import context, same-file lookups, and fuzzy matching. Each edge gets a confidence score and tier (A/B/C) reflecting how certain the resolution is. |
+| **Community Clusters** | Groups symbols that frequently call each other into clusters using the Louvain algorithm. These communities reveal the natural boundaries and modules in your codebase — often aligning with business domains or feature areas. |
+| **Execution Flows** | Traces paths from entry points (controllers, handlers, main functions) through the call graph using breadth-first search. Each flow shows the chain of symbols invoked during a particular operation, with a cumulative confidence score. |
+
 ## Install
 
 ```bash
