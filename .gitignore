@@ -19,3 +19,7 @@ target/
 
 # mycelium files
 *.mycelium.json
+
+# Local agent state
+.pi/
+.serena/
