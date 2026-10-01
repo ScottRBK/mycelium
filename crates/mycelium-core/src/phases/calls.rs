@@ -218,10 +218,7 @@ fn resolve_call(
     } else {
         let fuzzy = st.lookup_fuzzy(caller_name);
         let file_match = fuzzy.iter().find(|m| m.file == file_path);
-        match file_match {
-            Some(m) => m.symbol_id.clone(),
-            None => return None,
-        }
+        file_match?.symbol_id.clone()
     };
 
     // An out-of-line C++ method supplies an explicit owner. Prefer that owner for unqualified

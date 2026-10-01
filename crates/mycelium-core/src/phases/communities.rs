@@ -461,7 +461,7 @@ fn disambiguate_label(
             *parent_counts.entry(p.as_str()).or_insert(0) += 1;
         }
         let mut sorted: Vec<_> = parent_counts.into_iter().collect();
-        sorted.sort_by(|a, b| b.1.cmp(&a.1));
+        sorted.sort_by_key(|entry| std::cmp::Reverse(entry.1));
         if sorted.len() > 1 {
             let secondary = sorted[1].0.rsplit('.').next().unwrap_or(sorted[1].0);
             let candidate = format!("{label}/{secondary}");
