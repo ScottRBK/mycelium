@@ -25,6 +25,27 @@ pip install mycelium-map
 
 Pre-built binary wheels are available for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64). Source builds require a Rust toolchain.
 
+## Agent skills
+
+Install [mycelium-mermaid](skills/mycelium-mermaid/SKILL.md) to generate Mermaid class diagrams as
+Markdown using Mycelium's deterministic exporter.
+
+Install it interactively with the [Skills CLI](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add ScottRBK/mycelium
+```
+
+Or select the skill explicitly; add `--global` to make it available across projects:
+
+```bash
+npx skills add ScottRBK/mycelium --skill mycelium-mermaid
+```
+
+The skill provides agent instructions. Install Mycelium separately as described above, and check
+`mycelium-map export --help` for Mermaid export support. Then ask your agent to use `mycelium-mermaid`
+to generate a class diagram for your repository.
+
 ## Usage
 
 ```bash

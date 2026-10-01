@@ -3,6 +3,8 @@ name: mycelium-read
 description: Query and analyse a .mycelium.json structural map produced by the Mycelium static analysis tool. Use when exploring codebase architecture, understanding project structure, or reviewing Mycelium output files.
 argument-hint: "<path-to-file.mycelium.json> [query]"
 allowed-tools: Read, Bash
+metadata:
+  internal: true
 ---
 
 # Mycelium JSON Reader
