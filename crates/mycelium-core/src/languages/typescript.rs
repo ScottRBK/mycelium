@@ -419,7 +419,11 @@ impl TypeScriptAnalyser {
                     }
                 }
             }
-            if n.kind() == "variable_declarator" {
+            if n.kind() == "variable_declarator"
+                && n.child_by_field_name("value").is_some_and(|value| {
+                    matches!(value.kind(), "arrow_function" | "function_expression")
+                })
+            {
                 for i in 0..n.child_count() {
                     if let Some(c) = n.child(i) {
                         if c.kind() == "identifier" {

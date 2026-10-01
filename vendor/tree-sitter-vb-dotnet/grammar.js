@@ -20,6 +20,10 @@ module.exports = grammar({
 
   
   conflicts: $ => [
+    [$.source_file],
+    [$._member_declaration, $.const_declaration, $.field_declaration,
+      $.method_declaration, $.constructor_declaration, $.property_declaration,
+      $.event_declaration],
     [$.type, $.invocation],
     [$.type] ,
     [$.new_expression] ,
@@ -41,8 +45,9 @@ module.exports = grammar({
   rules: {
     
     source_file: $ => seq(
-    optional($.option_statements),
-    repeat($.imports_statement),
+    repeat(alias($._terminator, $.blank_line)),
+    optional(seq($.option_statements, repeat(alias($._terminator, $.blank_line)))),
+    repeat(seq($.imports_statement, repeat(alias($._terminator, $.blank_line)))),
     repeat(choice(
       $.attribute_block,
       $.namespace_block,
@@ -68,8 +73,12 @@ module.exports = grammar({
     // Imports statement for namespace imports (can import multiple namespaces in one line)
     imports_statement: $ => seq(
       kw('Imports'),
-      commaSep1(field('namespace', $.namespace_name)),
+      commaSep1(choice(field('namespace', $.namespace_name), $.imports_alias)),
       $._terminator
+    ),
+
+    imports_alias: $ => seq(
+      field('alias', $.identifier), '=', field('namespace', $.namespace_name)
     ),
 
     // A dot-separated name (for namespaces or qualified types)
@@ -236,6 +245,9 @@ module.exports = grammar({
     // Type member declarations inside class/module/etc.
     _member_declaration: $ => choice(
       alias($._terminator, $.blank_line),
+      seq(repeat($.attribute_block), choice(
+        $.class_block, $.structure_block, $.interface_block, $.enum_block
+      )),
       $.const_declaration,
       $.field_declaration,
       $.method_declaration,
@@ -975,4 +987,3 @@ function ci(keyword) {
   }).join('');
   return new RegExp(pattern);
 }
-

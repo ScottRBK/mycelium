@@ -23,6 +23,32 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Export a saved analysis map as Mermaid class diagrams in Markdown
+    Export {
+        input: PathBuf,
+        #[arg(short, long)]
+        output: PathBuf,
+        #[arg(long, default_value = "mermaid", value_parser = ["mermaid"])]
+        format: String,
+        /// Repository-relative file or directory to include
+        #[arg(long, default_value = "")]
+        path: String,
+        /// Maximum boxes in each diagram
+        #[arg(long, default_value_t = 8)]
+        max_classes: usize,
+        /// Hide recognised tests by default; include preserves the complete view
+        #[arg(long, default_value = "exclude", value_parser = ["exclude", "include"])]
+        tests: String,
+        /// Repository-relative test file or directory (repeatable)
+        #[arg(long)]
+        test_path: Vec<String>,
+        /// Keep a file or directory, overriding test detection (repeatable)
+        #[arg(long)]
+        keep_path: Vec<String>,
+        /// Include a collapsed list of test selection reasons
+        #[arg(long)]
+        explain_tests: bool,
+    },
     /// Analyse a source code repository and produce a structural map
     Analyze {
         /// Path to the repository to analyse
@@ -66,6 +92,35 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Export {
+            input,
+            output,
+            format: _,
+            path,
+            max_classes,
+            tests,
+            test_path,
+            keep_path,
+            explain_tests,
+        } => {
+            let options = mycelium_core::mermaid::MermaidOptions {
+                path,
+                max_classes,
+                // Clap validates this same two-value set above.
+                tests: if tests == "include" {
+                    mycelium_core::mermaid::TestMode::Include
+                } else {
+                    mycelium_core::mermaid::TestMode::Exclude
+                },
+                test_paths: test_path,
+                keep_paths: keep_path,
+                explain_tests,
+            };
+            if let Err(error) = run_export(&input, &output, &options) {
+                eprintln!("Mermaid export failed: {error}");
+                std::process::exit(1);
+            }
+        }
         Commands::Analyze {
             path,
             output,
@@ -228,4 +283,19 @@ fn run_with_progress(config: &AnalysisConfig, output_path: &str, verbose: bool) 
         style("Output written to:").green(),
         output_path
     );
+}
+
+fn run_export(
+    input: &std::path::Path,
+    output: &std::path::Path,
+    options: &mycelium_core::mermaid::MermaidOptions,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let file = std::fs::File::open(input)?;
+    let result = serde_json::from_reader(std::io::BufReader::new(file))?;
+    let report = mycelium_core::mermaid::export_mermaid_report(&result, options)?;
+    for notice in report.notices {
+        eprintln!("{notice}");
+    }
+    std::fs::write(output, report.markdown)?;
+    Ok(())
 }

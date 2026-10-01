@@ -72,19 +72,27 @@ fn is_preproc_container(kind: &str) -> bool {
 // ---- Shared C/C++ helpers ----
 
 fn get_func_name(node: &Node, source: &[u8]) -> Option<String> {
+    get_qualified_func_name(node, source)
+        .and_then(|name| name.rsplit("::").next().map(str::to_string))
+}
+
+fn get_qualified_func_name(node: &Node, source: &[u8]) -> Option<String> {
     for i in 0..node.child_count() {
         if let Some(child) = node.child(i) {
             if child.kind() == "function_declarator" {
                 for j in 0..child.child_count() {
                     if let Some(c) = child.child(j) {
-                        if c.kind() == "identifier" {
-                            return c.utf8_text(source).ok().map(|s| s.to_string());
+                        if matches!(
+                            c.kind(),
+                            "identifier" | "field_identifier" | "qualified_identifier"
+                        ) {
+                            return c.utf8_text(source).ok().map(str::to_string);
                         }
                     }
                 }
             }
             if child.kind() == "pointer_declarator" {
-                let result = get_func_name(&child, source);
+                let result = get_qualified_func_name(&child, source);
                 if result.is_some() {
                     return result;
                 }
@@ -132,7 +140,9 @@ fn extract_c_symbols(
                     line: child.start_position().row + 1,
                     visibility: Visibility::Public,
                     exported: true,
-                    parent: parent_id.map(|s| s.to_string()),
+                    parent: get_qualified_func_name(&child, source)
+                        .and_then(|name| name.rsplit_once("::").map(|(owner, _)| owner.to_string()))
+                        .or_else(|| parent_id.map(str::to_string)),
                     language: Some(lang.to_string()),
                     byte_range: Some((child.byte_range().start, child.byte_range().end)),
                     parameter_types: None,
@@ -335,7 +345,7 @@ fn find_enclosing_func(node: &Node, source: &[u8]) -> Option<String> {
     let mut current = node.parent();
     while let Some(n) = current {
         if n.kind() == "function_definition" {
-            return get_func_name(&n, source);
+            return get_qualified_func_name(&n, source);
         }
         current = n.parent();
     }

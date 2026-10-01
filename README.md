@@ -50,6 +50,24 @@ result = analyze("path/to/repo")
 print(result["stats"])
 ```
 
+### Mermaid class diagrams
+
+```bash
+mycelium-map analyze ./my-project -o map.json --quiet
+mycelium-map export map.json -o diagrams.md
+mycelium-map export map.json -o services.md --path src/services --max-classes 6
+```
+
+Exports typed fields, parameter/return signatures, declared type relationships, and labelled calls
+as deterministic Mermaid Markdown. Large views split into bounded diagrams with a complete list
+of resolved relationships. Both CLIs and `mycelium.export_mermaid(result)` share the Rust exporter.
+Exports hide recognised Rust/Go tests and supported Python, .NET, Java and JS/TS framework
+declarations
+by default. Use `--test-path tests` for explicit test folders (including C/C++), `--keep-path` for
+exceptions, and `--tests include` for the full view. Reanalyse older maps for new framework rules.
+See
+[coverage, limitations, and pinned repository checkpoints](docs/mermaid-export.md).
+
 ## Supported Languages
 
 | Language | Extensions |

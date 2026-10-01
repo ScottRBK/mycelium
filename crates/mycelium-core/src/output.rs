@@ -242,6 +242,7 @@ pub fn build_result(
         .collect();
 
     AnalysisResult {
+        class_diagram: Some(kg.class_diagram.clone()),
         version: "1.0".to_string(),
         metadata,
         stats,

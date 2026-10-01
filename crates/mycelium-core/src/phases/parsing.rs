@@ -1,4 +1,4 @@
-//! Phase 2: Tree-sitter AST parsing, extract symbols into SymbolTable + KnowledgeGraph + NamespaceIndex.
+//! Parse source files into symbols, namespace indexes, and class declaration facts.
 
 use std::collections::HashSet;
 use std::path::Path;
@@ -17,6 +17,7 @@ pub fn run_parsing_phase(
     ns_index: &mut NamespaceIndex,
 ) {
     let registry = AnalyserRegistry::new();
+    kg.class_diagram.test_detection = Some(crate::declarations::TestDetection::default());
 
     // Collect file paths from the knowledge graph
     let files: Vec<(String, Option<String>)> = kg
@@ -33,6 +34,7 @@ pub fn run_parsing_phase(
 
     // Track used symbol IDs for deduplication
     let mut used_ids = HashSet::new();
+    let mut framework_bindings = Default::default();
 
     for (file_path, _language) in &files {
         let ext = Path::new(file_path)
@@ -61,6 +63,22 @@ pub fn run_parsing_phase(
             Some(t) => t,
             None => continue,
         };
+
+        let declarations = crate::languages::declarations::extract(
+            &tree,
+            &source,
+            file_path,
+            analyser.language_name(),
+            &mut framework_bindings,
+        );
+        if let (Some(saved), Some(file)) = (
+            &mut kg.class_diagram.test_detection,
+            declarations.test_detection,
+        ) {
+            saved.diagnostics.extend(file.diagnostics);
+        }
+        kg.class_diagram.classes.extend(declarations.classes);
+        kg.class_diagram.warnings.extend(declarations.warnings);
 
         // Extract symbols
         let mut symbols = analyser.extract_symbols(&tree, &source, file_path);
@@ -94,4 +112,9 @@ pub fn run_parsing_phase(
             }
         }
     }
+    crate::languages::declarations::frameworks::finish(
+        &mut kg.class_diagram,
+        &files.into_iter().map(|(path, _)| path).collect::<Vec<_>>(),
+        framework_bindings,
+    );
 }

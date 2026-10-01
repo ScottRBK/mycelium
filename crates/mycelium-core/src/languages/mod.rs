@@ -8,6 +8,7 @@ use crate::config::{ImportStatement, RawCall, Symbol};
 
 pub mod c_cpp;
 pub mod csharp;
+pub(crate) mod declarations;
 pub mod go_lang;
 pub mod java;
 pub mod python;

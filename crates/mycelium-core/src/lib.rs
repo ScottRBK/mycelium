@@ -10,3 +10,6 @@ pub mod languages;
 pub mod output;
 pub mod phases;
 pub mod pipeline;
+
+pub mod declarations;
+pub mod mermaid;

@@ -12,6 +12,7 @@ pub struct SymbolDefinition {
     pub file: String,
     pub symbol_type: String,
     pub language: Option<String>,
+    pub parent: Option<String>,
 }
 
 /// Dual HashMap for symbol lookups.
@@ -38,6 +39,16 @@ impl SymbolTable {
             .or_default()
             .insert(symbol.name.clone(), symbol.id.clone());
 
+        // Qualified C++ definitions retain an exact owner lookup alongside their short name.
+        if symbol.language.as_deref() == Some("C++") {
+            if let Some(parent) = &symbol.parent {
+                self.file_index
+                    .entry(symbol.file.clone())
+                    .or_default()
+                    .insert(format!("{parent}::{}", symbol.name), symbol.id.clone());
+            }
+        }
+
         // Global index
         let defn = SymbolDefinition {
             symbol_id: symbol.id.clone(),
@@ -45,6 +56,7 @@ impl SymbolTable {
             file: symbol.file.clone(),
             symbol_type: symbol.symbol_type.as_str().to_string(),
             language: symbol.language.clone(),
+            parent: symbol.parent.clone(),
         };
         self.global_index
             .entry(symbol.name.clone())

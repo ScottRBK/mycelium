@@ -48,6 +48,7 @@ pub fn run_structure_phase(config: &AnalysisConfig, kg: &mut KnowledgeGraph) {
 
     for entry in WalkDir::new(repo_path)
         .follow_links(false)
+        .sort_by_file_name()
         .into_iter()
         .filter_entry(|e| {
             let name = e.file_name().to_string_lossy();

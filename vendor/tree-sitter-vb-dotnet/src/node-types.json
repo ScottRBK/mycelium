@@ -467,7 +467,15 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_block",
+          "named": true
+        },
+        {
           "type": "blank_line",
+          "named": true
+        },
+        {
+          "type": "class_block",
           "named": true
         },
         {
@@ -483,6 +491,10 @@
           "named": true
         },
         {
+          "type": "enum_block",
+          "named": true
+        },
+        {
           "type": "event_declaration",
           "named": true
         },
@@ -491,11 +503,19 @@
           "named": true
         },
         {
+          "type": "interface_block",
+          "named": true
+        },
+        {
           "type": "method_declaration",
           "named": true
         },
         {
           "type": "property_declaration",
+          "named": true
+        },
+        {
+          "type": "structure_block",
           "named": true
         },
         {
@@ -1341,11 +1361,21 @@
     }
   },
   {
-    "type": "imports_statement",
+    "type": "imports_alias",
     "named": true,
     "fields": {
+      "alias": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
       "namespace": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {
@@ -1354,6 +1384,32 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "imports_statement",
+    "named": true,
+    "fields": {
+      "namespace": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "namespace_name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "imports_alias",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1411,7 +1467,15 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_block",
+          "named": true
+        },
+        {
           "type": "blank_line",
+          "named": true
+        },
+        {
+          "type": "class_block",
           "named": true
         },
         {
@@ -1427,6 +1491,10 @@
           "named": true
         },
         {
+          "type": "enum_block",
+          "named": true
+        },
+        {
           "type": "event_declaration",
           "named": true
         },
@@ -1435,11 +1503,19 @@
           "named": true
         },
         {
+          "type": "interface_block",
+          "named": true
+        },
+        {
           "type": "method_declaration",
           "named": true
         },
         {
           "type": "property_declaration",
+          "named": true
+        },
+        {
+          "type": "structure_block",
           "named": true
         },
         {
@@ -1799,7 +1875,15 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_block",
+          "named": true
+        },
+        {
           "type": "blank_line",
+          "named": true
+        },
+        {
+          "type": "class_block",
           "named": true
         },
         {
@@ -1815,6 +1899,10 @@
           "named": true
         },
         {
+          "type": "enum_block",
+          "named": true
+        },
+        {
           "type": "event_declaration",
           "named": true
         },
@@ -1823,11 +1911,19 @@
           "named": true
         },
         {
+          "type": "interface_block",
+          "named": true
+        },
+        {
           "type": "method_declaration",
           "named": true
         },
         {
           "type": "property_declaration",
+          "named": true
+        },
+        {
+          "type": "structure_block",
           "named": true
         }
       ]
@@ -2494,7 +2590,15 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_block",
+          "named": true
+        },
+        {
           "type": "blank_line",
+          "named": true
+        },
+        {
+          "type": "class_block",
           "named": true
         },
         {
@@ -2510,6 +2614,10 @@
           "named": true
         },
         {
+          "type": "enum_block",
+          "named": true
+        },
+        {
           "type": "event_declaration",
           "named": true
         },
@@ -2518,11 +2626,19 @@
           "named": true
         },
         {
+          "type": "interface_block",
+          "named": true
+        },
+        {
           "type": "method_declaration",
           "named": true
         },
         {
           "type": "property_declaration",
+          "named": true
+        },
+        {
+          "type": "structure_block",
           "named": true
         },
         {
@@ -3080,7 +3196,8 @@
   },
   {
     "type": "comment",
-    "named": true
+    "named": true,
+    "extra": true
   },
   {
     "type": "date_literal",

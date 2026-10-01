@@ -155,6 +155,50 @@ fn analyze(
     Ok(py_dict)
 }
 
+/// Export an analysis dictionary as deterministic Mermaid Markdown.
+#[pyfunction]
+#[pyo3(signature = (result, path = "", max_classes = 8, *, tests = "exclude",
+    test_paths = None, keep_paths = None, explain_tests = false))]
+#[allow(clippy::too_many_arguments)]
+fn export_mermaid(
+    py: Python<'_>,
+    result: &Bound<'_, PyDict>,
+    path: &str,
+    max_classes: usize,
+    tests: &str,
+    test_paths: Option<Vec<String>>,
+    keep_paths: Option<Vec<String>>,
+    explain_tests: bool,
+) -> PyResult<String> {
+    let json: String = py
+        .import("json")?
+        .call_method1("dumps", (result,))?
+        .extract()?;
+    let analysis = serde_json::from_str(&json).map_err(|e| {
+        pyo3::exceptions::PyValueError::new_err(format!("Invalid analysis map: {e}"))
+    })?;
+    let report = mycelium_core::mermaid::export_mermaid_report(
+        &analysis,
+        &mycelium_core::mermaid::MermaidOptions {
+            path: path.to_string(),
+            max_classes,
+            tests: tests
+                .parse()
+                .map_err(|e: mycelium_core::mermaid::ExportError| {
+                    pyo3::exceptions::PyValueError::new_err(e.to_string())
+                })?,
+            test_paths: test_paths.unwrap_or_default(),
+            keep_paths: keep_paths.unwrap_or_default(),
+            explain_tests,
+        },
+    )
+    .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+    for notice in report.notices {
+        py.import("warnings")?.call_method1("warn", (notice,))?;
+    }
+    Ok(report.markdown)
+}
+
 /// Return the Mycelium engine version.
 #[pyfunction]
 fn version() -> &'static str {
@@ -166,6 +210,7 @@ fn version() -> &'static str {
 fn _mycelium_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(analyze, m)?)?;
     m.add_function(wrap_pyfunction!(version, m)?)?;
+    m.add_function(wrap_pyfunction!(export_mermaid, m)?)?;
     m.add_class::<PyAnalysisConfig>()?;
     Ok(())
 }

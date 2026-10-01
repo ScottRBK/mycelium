@@ -112,6 +112,7 @@ impl EdgeData {
 
 /// Wrapper around petgraph::DiGraph with typed node/edge methods.
 pub struct KnowledgeGraph {
+    pub(crate) class_diagram: crate::declarations::ClassDiagram,
     graph: DiGraph<NodeData, EdgeData>,
     /// O(1) string ID → NodeIndex lookup.
     id_index: HashMap<String, NodeIndex>,
@@ -145,6 +146,7 @@ pub struct CallInfo {
 impl KnowledgeGraph {
     pub fn new() -> Self {
         Self {
+            class_diagram: Default::default(),
             graph: DiGraph::new(),
             id_index: HashMap::new(),
         }

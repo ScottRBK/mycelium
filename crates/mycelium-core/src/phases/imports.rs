@@ -502,11 +502,12 @@ fn resolve_java_import(
     let class_name = target_name.rsplit('.').next().unwrap_or(target_name);
     let basename = format!("{}.java", class_name);
     if let Some(candidates) = basename_index.get(&basename) {
-        for candidate in candidates {
-            if candidate != source_file {
-                return Some(candidate.clone());
-            }
-        }
+        // Basename fallback is heuristic, but its choice must not depend on HashSet order.
+        return candidates
+            .iter()
+            .filter(|path| *path != source_file)
+            .min()
+            .cloned();
     }
 
     None
@@ -517,7 +518,9 @@ fn resolve_java_import(
 // ---------------------------------------------------------------------------
 
 fn parse_go_mod(file_set: &HashSet<String>, repo_root: &str) -> Option<String> {
-    for path in file_set {
+    let mut paths: Vec<_> = file_set.iter().collect();
+    paths.sort_by_key(|path| (Path::new(path).components().count(), *path));
+    for path in paths {
         if Path::new(path)
             .file_name()
             .map(|f| f == "go.mod")
@@ -548,6 +551,9 @@ fn build_go_dir_index(file_set: &HashSet<String>) -> HashMap<String, Vec<String>
                 .to_string();
             index.entry(dir).or_default().push(path.clone());
         }
+    }
+    for paths in index.values_mut() {
+        paths.sort();
     }
     index
 }

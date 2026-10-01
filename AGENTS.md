@@ -7,10 +7,19 @@ execution flows. Both the native CLI and the Python package use the same engine.
 ## Architecture
 
 The diagrams show the current Rust implementation. Boxes are structs unless marked `module`,
-`trait`, or `enum`; module operations are free functions. Only the main fields and methods are
-shown, with signatures shortened for readability. `..>` means uses, `*--` means owns, and `..|>`
+`trait`, or `enum`; module operations are free functions. The main fields show their types, and
+method signatures show parameter and return types. `..>` means uses, `*--` means owns, and `..|>`
 means implements. See the
 [Mermaid class diagram syntax](https://mermaid.js.org/syntax/classDiagram.html).
+
+`+` means public and `-` means private. Method receivers (`&self` and `&mut self`) are omitted;
+an omitted return type means `()`. `build_result()` lists parameter types in source order without
+their names to fit within 100 columns. Enum variants omit their payloads. The type key below the
+first diagram defines abbreviations used in both diagrams.
+
+Selected calls are labelled `caller() calls callee()`, with the arrow pointing to the callee's
+box. Mermaid class diagrams connect boxes; the labels identify the individual methods or free
+functions involved. These calls have been checked against the source.
 
 ```mermaid
 classDiagram
@@ -18,54 +27,61 @@ classDiagram
 
     class pipeline {
         <<module>>
-        +run_pipeline(config, progress_callback) Result~AnalysisResult~
+        +run_pipeline(config: &AnalysisConfig, callback: Option~ProgressCallback~) PipelineResult
     }
 
     class AnalysisConfig {
-        +String repo_path
-        +Option~String~ output_path
-        +Option~Vec~String~~ languages
-        +Vec~String~ exclude_patterns
-        +f64 resolution
-        +usize max_community_size
-        +usize max_processes
-        +usize max_depth
-        +usize max_branching
-        +usize min_steps
-        +u64 max_file_size
+        +repo_path: String
+        +output_path: Option~String~
+        +languages: Option~Vec~String~~
+        +exclude_patterns: Vec~String~
+        +resolution: f64
+        +max_community_size: usize
+        +max_processes: usize
+        +max_depth: usize
+        +max_branching: usize
+        +min_steps: usize
+        +verbose: bool
+        +quiet: bool
+        +max_file_size: u64
     }
 
     class KnowledgeGraph {
-        -DiGraph graph
-        -HashMap id_index
-        +add_file(node)
-        +add_symbol(symbol)
-        +add_import(edge)
-        +add_call(edge)
-        +add_community(community)
-        +add_process(process)
+        -class_diagram: ClassDiagram
+        -graph: Graph
+        -id_index: Map~NodeIndex~
+        +new() KnowledgeGraph
+        +add_file(node: &FileNode)
+        +add_symbol(symbol: &Symbol)
+        +add_import(edge: &ImportEdge)
+        +add_call(edge: &CallEdge)
+        +add_community(community: &Community)
+        +add_process(process: &Process)
         +get_symbols() Vec~SymbolInfo~
-        +get_callers(symbol_id) Vec~CallInfo~
-        +get_callees(symbol_id) Vec~CallInfo~
-        +inner_graph() DiGraph
+        +get_call_edges() Vec~CallRecord~
+        +get_callers(symbol_id: &str) Vec~CallInfo~
+        +get_callees(symbol_id: &str) Vec~CallInfo~
+        +inner_graph() &Graph
     }
 
     class SymbolTable {
-        -HashMap file_index
-        -HashMap global_index
-        +add(symbol)
-        +lookup_exact(file_path, name) Option~str~
-        +lookup_fuzzy(name) SymbolDefinition[]
+        -file_index: Map~Map~String~~
+        -global_index: Map~Vec~SymbolDefinition~~
+        +new() SymbolTable
+        +add(symbol: &Symbol)
+        +lookup_exact(file_path: &str, name: &str) Option~&str~
+        +lookup_fuzzy(name: &str) &[SymbolDefinition]
     }
 
     class NamespaceIndex {
-        -HashMap ns_to_files
-        -HashMap file_to_ns
-        -HashMap file_imports
-        +register(namespace, file_path)
-        +get_files_for_namespace(namespace) String[]
-        +register_file_import(file_path, namespace)
-        +get_imported_namespaces(file_path) String[]
+        -ns_to_files: Map~Vec~String~~
+        -file_to_ns: Map~Vec~String~~
+        -file_imports: Map~Vec~String~~
+        +new() NamespaceIndex
+        +register(namespace: &str, file_path: &str)
+        +get_files_for_namespace(namespace: &str) &[String]
+        +register_file_import(file_path: &str, namespace: &str)
+        +get_imported_namespaces(file_path: &str) &[String]
     }
 
     class NodeData {
@@ -93,33 +109,52 @@ classDiagram
 
     class output {
         <<module>>
-        +build_result(config, kg, st, timings, total_ms) AnalysisResult
-        +write_output(result, output_path) Result
+        +build_result(&AnalysisConfig, &KnowledgeGraph, &SymbolTable, &Map~f64~, f64) AnalysisResult
+        +write_output(result: &AnalysisResult, output_path: &str) IoResult
     }
 
     class AnalysisResult {
-        +String version
-        +HashMap metadata
-        +HashMap stats
-        +StructureOutput structure
-        +Vec~SymbolOutput~ symbols
-        +ImportsOutput imports
-        +Vec~CallOutput~ calls
-        +Vec~CommunityOutput~ communities
-        +Vec~ProcessOutput~ processes
+        +class_diagram: Option~ClassDiagram~
+        +version: String
+        +metadata: Map~Value~
+        +stats: Map~Value~
+        +structure: StructureOutput
+        +symbols: Vec~SymbolOutput~
+        +imports: ImportsOutput
+        +calls: Vec~CallOutput~
+        +communities: Vec~CommunityOutput~
+        +processes: Vec~ProcessOutput~
     }
 
     pipeline ..> AnalysisConfig : reads
-    pipeline ..> KnowledgeGraph : creates and passes to phases
-    pipeline ..> SymbolTable : creates and passes to phases
-    pipeline ..> NamespaceIndex : creates and passes to phases
-    pipeline ..> output : calls build_result
+    pipeline ..> KnowledgeGraph : run_pipeline() calls new()
+    pipeline ..> SymbolTable : run_pipeline() calls new()
+    pipeline ..> NamespaceIndex : run_pipeline() calls new()
+    pipeline ..> output : run_pipeline() calls build_result()
     pipeline ..> AnalysisResult : returns
     KnowledgeGraph *-- NodeData : stores nodes
     KnowledgeGraph *-- EdgeData : stores edges
-    output ..> KnowledgeGraph : reads
+    output ..> KnowledgeGraph : build_result() calls get_symbols()
+    output ..> KnowledgeGraph : build_result() calls get_call_edges()
     output ..> AnalysisResult : builds and serializes
 ```
+
+Type key: Mermaid writes generic brackets as `~T~`. The abbreviations below keep signatures
+readable and avoid Mermaid's limitation on comma-separated generic parameters. Only
+`ProgressCallback` is an existing project type alias; `Value` is the JSON library's type.
+
+| Diagram type | Rust type |
+|---|---|
+| `Map<T>` | `HashMap<String, T>` |
+| `Graph` | `DiGraph<NodeData, EdgeData>` |
+| `PipelineResult` | `Result<AnalysisResult, Box<dyn std::error::Error>>` |
+| `IoResult` | `std::io::Result<()>` |
+| `CallRecord` | `(String, String, f64, String, String, usize)` |
+| `ProgressCallback` | `Box<dyn FnMut(&str, &str)>` |
+| `Value` | `serde_json::Value` |
+
+`CallRecord` holds `(from, to, confidence, tier, reason, line)`. The callback receives the phase
+name and label. `build_result()` receives `(config, kg, st, timings, total_ms)` in that order.
 
 `run_pipeline()` creates one graph and two lookup indexes for each run. The phases execute in
 order, enriching the shared graph. `SymbolTable` finds symbols by file/name or across the whole
@@ -134,6 +169,73 @@ output structs in `AnalysisResult`.
 `run_pipeline()` returns data; the CLI writes the output file. The Python binding converts the
 result to a Python dictionary. Calling `mycelium.analyze()` alone does not write a JSON file.
 
+### Mermaid Export
+
+The parsing phase also extracts declaration facts from the same syntax tree, using language-specific
+visitors in `languages/declarations/`. `KnowledgeGraph` carries the `ClassDiagram` to the additive
+`AnalysisResult.class_diagram` field. Existing call-resolution symbols remain separate from this
+richer model. `mermaid::export_mermaid()` resolves owners, filters scope, and writes deterministic
+Markdown. Both CLIs expose `export`; the Python binding exposes `export_mermaid(result)`.
+
+```mermaid
+classDiagram
+    direction TB
+    class ClassDiagram {
+        +classes: Vec~Class~
+        +warnings: Vec~String~
+        +test_detection: Option~TestDetection~
+    }
+    class Class {
+        +id: String
+        +name: String
+        +kind: String
+        +file: String
+        +line: usize
+        +test: Option~TestEvidence~
+        +members: Vec~Member~
+        +bases: Vec~Base~
+    }
+    class Member {
+        +test: Option~TestEvidence~
+        +file: String
+        +name: String
+        +kind: String
+        +parameters: Vec~Parameter~
+        +value_type: Option~String~
+    }
+    class MermaidOptions {
+        +path: String
+        +max_classes: usize
+        +tests: TestMode
+        +test_paths: Vec~String~
+        +keep_paths: Vec~String~
+        +explain_tests: bool
+    }
+    class mermaid {
+        <<module>>
+        +export_mermaid(result: &AnalysisResult, options: &MermaidOptions) ExportResult
+    }
+    ClassDiagram *-- Class : contains declaration records
+    Class *-- Member : contains member records
+    mermaid ..> ClassDiagram : reads
+    mermaid ..> MermaidOptions : reads
+```
+
+The map stores versioned test evidence without removing analysis facts. Export defaults to excluding
+Rust `#[test]`/literal `cfg(test)`, Go `_test.go`, and supported Python, .NET, Java and JS/TS
+markers. Framework bindings are checked conservatively, including repository declaration conflicts.
+Detector version 2 adds framework rules; version 1 maps retain their saved Rust/Go evidence. All
+languages support explicit `--test-path` and overriding `--keep-path`; `--tests include` preserves
+the complete view. Selection uses raw source occurrences before impl merging, with identities kept
+for ambiguity and stable box IDs. `--explain-tests` adds source-level reasons. C/C++ use explicit
+paths. Custom/global framework discovery and separate test diagrams remain deferred. See the export
+guide for exact rules.
+
+`ExportResult` abbreviates `Result<String, ExportError>`. An older map without declarations
+reports that analysis must be rerun. Views bound class/member counts and retain resolved
+relationships in a complete list. Calls remain heuristic; fields do not imply exclusive ownership.
+See [Mermaid export](docs/mermaid-export.md) for coverage and checkpoint validation.
+
 ### Language Analysers
 
 Structure, parsing, imports, and calls each create an `AnalyserRegistry`. It selects a boxed
@@ -145,24 +247,24 @@ classDiagram
     direction TB
 
     class AnalyserRegistry {
-        -Vec analysers
-        -HashMap extension_map
+        -analysers: Vec~Box~dyn LanguageAnalyser~~
+        -extension_map: Map~usize~
         +new() AnalyserRegistry
-        +get_by_extension(ext) Option~LanguageAnalyser~
-        +language_for_extension(ext) Option~str~
-        +extensions() Vec~str~
+        +get_by_extension(ext: &str) Option~&dyn LanguageAnalyser~
+        +language_for_extension(ext: &str) Option~&str~
+        +extensions() Vec~&str~
     }
 
     class LanguageAnalyser {
         <<trait>>
-        +extensions() str[]
-        +language_name() str
+        +extensions() &[&str]
+        +language_name() &str
         +get_language() Language
-        +get_language_for_ext(ext) Language
-        +extract_symbols(tree, source, file_path) Vec~Symbol~
-        +extract_imports(tree, source, file_path) Vec~ImportStatement~
-        +extract_calls(tree, source, file_path) Vec~RawCall~
-        +builtin_exclusions() HashSet~String~
+        +get_language_for_ext(ext: &str) Language
+        +extract_symbols(tree: &Tree, source: &[u8], file_path: &str) Vec~Symbol~
+        +extract_imports(tree: &Tree, source: &[u8], file_path: &str) Vec~ImportStatement~
+        +extract_calls(tree: &Tree, source: &[u8], file_path: &str) Vec~RawCall~
+        +builtin_exclusions() &HashSet~String~
         +is_available() bool
     }
 
@@ -176,7 +278,8 @@ classDiagram
     class CAnalyser
     class CppAnalyser
 
-    AnalyserRegistry *-- LanguageAnalyser : owns boxed implementations
+    AnalyserRegistry *-- LanguageAnalyser
+    AnalyserRegistry ..> LanguageAnalyser : language_for_extension() calls language_name()
     CSharpAnalyser ..|> LanguageAnalyser
     VbNetAnalyser ..|> LanguageAnalyser
     TypeScriptAnalyser ..|> LanguageAnalyser
@@ -211,7 +314,7 @@ Call resolution records both a confidence and a reason:
 |---|---|---|
 | A | 0.9 | Imported symbol or dependency-injection parameter type. |
 | A | 0.85 | Interface-to-implementation match. |
-| B | 0.85 | Symbol in the same file. |
+| B | 0.85 | Same-file symbol; qualified C++ methods first check their explicit owner. |
 | C | 0.5 / 0.3 | Unique / ambiguous global name match. |
 
 These are static heuristics. A call edge or execution flow describes a possible connection, not
@@ -246,6 +349,8 @@ The VB.NET grammar is vendored in `vendor/tree-sitter-vb-dotnet/` for Tree-sitte
 crates/
   mycelium-core/src/
     config.rs           Shared records, configuration, and output structs
+    declarations.rs     Typed declaration model stored in analysis maps
+    mermaid.rs          Deterministic class diagram export and display limits
     pipeline.rs         Six-phase orchestration, timing, and progress callbacks
     graph/              KnowledgeGraph, SymbolTable, NamespaceIndex, entry-point scoring
     phases/             Analysis stages
@@ -296,6 +401,7 @@ check the extracted records; a resolution fix should also check the resulting gr
 |---|---|---|---|
 | Rust unit | Inline `#[cfg(test)]` modules | Data types, indexes, and algorithm helpers. | Yes |
 | Rust integration | `crates/mycelium-core/tests/` | Fixtures, phases, pipeline, JSON. | Yes |
+| Mermaid checkpoints | `tests/checkpoints/` | Commit-pinned external source to Markdown. | Local |
 | Python bindings | `tests/test_bindings.py` | Extension API, config, progress, and exports. | Yes |
 
 ```bash

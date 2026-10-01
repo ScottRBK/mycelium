@@ -1,0 +1,319 @@
+[
+  {
+    "name": "forgetful",
+    "repository": "ScottRBK/forgetful",
+    "local_path": "~/development/ai/mcp/forgetful",
+    "commit": "6618ae56abc718f873d0ae78f0c957f74c05020b",
+    "files": [
+      "app/models/user_models.py",
+      "app/protocols/user_protocol.py"
+    ],
+    "contains": [
+      "[\"User\"]",
+      "+external_id: str",
+      "+id: UUID",
+      "--|>"
+    ],
+    "sha256": "7513a8ce0230dc7009581355aa728826734468fa43cb5c3290c789db94792576",
+    "members": {
+      "User": [
+        "+id: UUID"
+      ],
+      "UserCreate": [
+        "+external_id: str"
+      ],
+      "UserRepository": [
+        "+create_user(user: UserCreate) User"
+      ]
+    },
+    "filtering": {
+      "files": [
+        "tests/e2e/conftest.py",
+        "test_harness/config.py"
+      ],
+      "options": [
+        "--test-path",
+        "tests/e2e"
+      ],
+      "contains": [
+        "[\"HarnessConfig\"]",
+        "[\"User\"]"
+      ],
+      "absent": [
+        "[\"StreamingASGITransport\"]"
+      ],
+      "sha256": "6a7814f243c27d55ae32e6dfc09539ba12e4727026d9b63897bea047d6335d5d",
+      "automatic": {
+        "contains": [
+          "[\"StreamingASGITransport\"]",
+          "[\"HarnessConfig\"]",
+          "python.pytest-fixture"
+        ],
+        "absent": [
+          "+embedding_adapter()",
+          "+reranker_adapter()",
+          "+postgres_container()"
+        ],
+        "sha256": "dce6cbf88d5c4dac454a11ece8414656d700ee7f35339f3988f5c651d207ab38"
+      }
+    }
+  },
+  {
+    "name": "ferox",
+    "repository": "ScottRBK/ferox",
+    "local_path": "~/development/ai/ferox",
+    "commit": "4132d8f3ed8b8a2ecc9809a2682a07b6a4a9c5ad",
+    "files": [
+      "src/gateway.rs",
+      "src/ports/llm.rs"
+    ],
+    "contains": [
+      "[\"Gateway\"]",
+      "-provider: P",
+      "+new(provider: P) Self",
+      "<<trait>>"
+    ],
+    "sha256": "d32b888e16d092655304c9d0af6581c520d4ea36c72fce1f801c0c8c06b96c7d",
+    "members": {
+      "Gateway": [
+        "-provider: P",
+        "+new(provider: P) Self",
+        "+complete(request:"
+      ],
+      "LlmProvider": [
+        "+complete(request: CompletionRequest)"
+      ]
+    },
+    "filtering": {
+      "files": [
+        "src/adapters/providers/openai_compatible/client.rs",
+        "tests/e2e.rs",
+        "tests/e2e/openai_compatible_e2e.rs"
+      ],
+      "options": [
+        "--test-path",
+        "tests"
+      ],
+      "contains": [
+        "[\"OpenAiCompatibleClient\"]",
+        "[\"Gateway\"]",
+        "rust.cfg-test"
+      ],
+      "absent": [
+        "[\"E2eConfig\"]",
+        "test_deserialise_moels()"
+      ],
+      "sha256": "12fb9fdc77f96f480f3943c89c68ef2c4ea0a5f9c5d493f81fc4f9669783b60e"
+    }
+  },
+  {
+    "name": "eval-harness",
+    "repository": "ScottRBK/eval-harness",
+    "local_path": "~/development/ai/evals/eval-harness",
+    "commit": "ffb0f5b92f9af027d0ce742be7be2d534390a887",
+    "files": [
+      "src/models.py"
+    ],
+    "contains": [
+      "[\"DockerRunResult\"]",
+      "+score: float",
+      "+time_taken_seconds: float",
+      "+total_tokens: int",
+      "+redaction_values()"
+    ],
+    "sha256": "6ba733a5bac31ce8db1162d272b5b5777594fcbc73a07e4827f75b113de4d7ea",
+    "members": {
+      "DockerRunResult": [
+        "+score: float",
+        "+total_tokens: int"
+      ],
+      "CapabilityProfile": [
+        "+redaction_values()"
+      ]
+    },
+    "filtering": {
+      "files": [
+        "tests/unit/test_eval_config.py",
+        "example_evals/chess_engine/fixtures/integration_tests.rs"
+      ],
+      "options": [
+        "--test-path",
+        "tests",
+        "--keep-path",
+        "example_evals"
+      ],
+      "contains": [
+        "[\"DockerRunResult\"]",
+        "start_d1()",
+        "keep-path override"
+      ],
+      "absent": [
+        "test_build_eval_session_accepts_valid_config("
+      ],
+      "sha256": "4edd48fb3152696413c4f3bfd55c6334d8070b048bdfc77a06ec829df2f03e92"
+    }
+  },
+  {
+    "name": "surelycrm",
+    "repository": "ScottRBK/surelycrm",
+    "local_path": "~/development/ai/dark-business/surelycrm",
+    "commit": "edf6e4c13bf22e547db9f5adf3f9230b0ae3d0df",
+    "files": [
+      "src/Sure.EventEngine/Rules/BaseRule.cs",
+      "src/Sure.EventEngine/Rules/IEventRule.cs",
+      "src/Sure.Common/Interfaces/ITimeProvider.cs"
+    ],
+    "contains": [
+      "[\"BaseRule\"]",
+      "#TimeProvider: ITimeProvider",
+      "EvaluateAsync(domainEvent:",
+      "..|>",
+      " --> "
+    ],
+    "sha256": "8e8521117ee9a366de0f96aad7afe5783c7f071a7fc0627d22b05e692cc65b2a",
+    "members": {
+      "BaseRule": [
+        "#TimeProvider: ITimeProvider",
+        "+EvaluateAsync("
+      ],
+      "IEventRule": [
+        "+EvaluateAsync("
+      ]
+    },
+    "filtering": {
+      "files": [
+        "tests/Sure.Common.Tests/Extensions/StringExtensionsTests.cs",
+        "tests/Sure.Common.Tests/Sure.Common.Tests.csproj",
+        "src/Sure.Common/Extensions/StringExtensions.cs"
+      ],
+      "options": [
+        "--test-path",
+        "tests"
+      ],
+      "contains": [
+        "[\"StringExtensions\"]",
+        "[\"BaseRule\"]"
+      ],
+      "absent": [
+        "[\"StringExtensionsTests\"]"
+      ],
+      "sha256": "7899010804afc567d26b4c056e724964042b15d2bfeb6eeb82c0c85f0df3ca59",
+      "automatic": {
+        "contains": [
+          "[\"StringExtensionsTests\"]",
+          "[\"StringExtensions\"]"
+        ],
+        "absent": [],
+        "sha256": "21bf0650822fe41e383e37d9778f94020fdb3beecc9ac42f7b2914cba167e8c8"
+      }
+    }
+  },
+  {
+    "name": "pi-forgetful",
+    "repository": "ScottRBK/pi-forgetful-extension",
+    "local_path": "~/.pi/agent/git/github.com/ScottRBK/pi-forgetful-extension",
+    "commit": "94070d236deaced4242a7c7f2ecb5096cf404360",
+    "files": [
+      "src/concurrency.ts",
+      "src/contracts.ts"
+    ],
+    "contains": [
+      "mapConcurrent(items:",
+      "<<interface>>",
+      "<<module>>"
+    ],
+    "sha256": "41ea9defdabb85f74aca1f39473cad57546a6fd95b43f59faf1323fc281b5f98",
+    "members": {
+      "src/concurrency.ts": [
+        "mapConcurrent(items:"
+      ],
+      "ModelSubmissionError": [
+        "rejectionReasons: string[]"
+      ],
+      "ForgetfulClient": [
+        "+getMemoryEntityIds(id: number, signal: AbortSignal)"
+      ]
+    },
+    "filtering": {
+      "files": [
+        "test/model.test.ts",
+        "src/model.ts"
+      ],
+      "options": [
+        "--test-path",
+        "test"
+      ],
+      "contains": [
+        "[\"PiMemoryModel\"]",
+        "parseModelResponse("
+      ],
+      "absent": [
+        "[\"ThrowingLogger\"]",
+        "reviewSubmission("
+      ],
+      "sha256": "1a3cfb9346dcb5c1252698ca8b00e8618e8c105b84544535ff22ac47836225e3",
+      "automatic": {
+        "contains": [
+          "[\"PiMemoryModel\"]",
+          "reviewSubmission(",
+          "javascript.node-callback"
+        ],
+        "absent": [
+          "[\"ThrowingLogger\"]"
+        ],
+        "sha256": "7fd31f350583cdeca66e3a52904765f905a48e450b8d0e4cc3808cdd01f2d3ea"
+      }
+    }
+  },
+  {
+    "name": "pi-web-search",
+    "repository": "local/pi",
+    "local_path": "~/.pi",
+    "commit": "b13f874337e4cdcb34993d79800437a6cdac4dd9",
+    "files": [
+      "agent/extensions/web-search/src/browser.ts"
+    ],
+    "contains": [
+      "sharedBrowser()",
+      "closeSharedBrowser()",
+      "openContext()",
+      "openContext() calls sharedBrowser()"
+    ],
+    "sha256": "0336e1271eab74dd54a156ba251fa0e87fe42caa1d08a8c8c7e3fc7bbf7667ec",
+    "members": {
+      "agent/extensions/web-search/src/browser.ts": [
+        "sharedBrowser() Promise~Browser~",
+        "openContext() Promise~BrowserContext~"
+      ]
+    },
+    "filtering": {
+      "files": [
+        "agent/extensions/web-search/tests/test_web_search_helper.py"
+      ],
+      "options": [
+        "--test-path",
+        "agent/extensions/web-search/tests"
+      ],
+      "contains": [
+        "sharedBrowser()"
+      ],
+      "absent": [
+        "[\"SearchReturnsResultsTest\"]",
+        "[\"BackendFailureIsLoudTest\"]"
+      ],
+      "sha256": "3c5077fb9f1d4074de37ef41acbba3f55f1f1d8877771a783a9636a2b3d18e29",
+      "automatic": {
+        "contains": [
+          "sharedBrowser()",
+          "run_helper(",
+          "python.unittest-case"
+        ],
+        "absent": [
+          "[\"SearchReturnsResultsTest\"]",
+          "[\"BackendFailureIsLoudTest\"]"
+        ],
+        "sha256": "6be39a328ddc795281391e2489a570c4252589e96c9ddc6c628eaf3649b98b6f"
+      }
+    }
+  }
+]

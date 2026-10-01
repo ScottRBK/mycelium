@@ -329,6 +329,8 @@ impl Default for AnalysisConfig {
 /// Result of an analysis run — matches the JSON output schema.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnalysisResult {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub class_diagram: Option<crate::declarations::ClassDiagram>,
     #[serde(default = "default_version")]
     pub version: String,
     #[serde(default)]
@@ -356,6 +358,7 @@ fn default_version() -> String {
 impl Default for AnalysisResult {
     fn default() -> Self {
         Self {
+            class_diagram: None,
             version: default_version(),
             metadata: HashMap::new(),
             stats: HashMap::new(),

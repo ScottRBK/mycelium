@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from mycelium._mycelium_rust import analyze, PyAnalysisConfig
+from mycelium._mycelium_rust import analyze, export_mermaid, PyAnalysisConfig
 
 
 @click.group()
@@ -77,6 +77,30 @@ def _run_with_progress(config: PyAnalysisConfig):
 def _run_quiet(config: PyAnalysisConfig):
     """Run the pipeline with no output."""
     return analyze(config.repo_path, config)
+
+
+@cli.command("export")
+@click.argument("input_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("-o", "--output", "output_path", required=True, type=click.Path(path_type=Path))
+@click.option("--format", "output_format", type=click.Choice(["mermaid"]), default="mermaid")
+@click.option("--path", default="", help="Repository-relative file or directory to include")
+@click.option("--max-classes", default=8, type=click.IntRange(min=1))
+@click.option("--tests", type=click.Choice(["exclude", "include"]), default="exclude")
+@click.option("--test-path", "test_paths", multiple=True, help="Test file or directory")
+@click.option("--keep-path", "keep_paths", multiple=True, help="Override test selection")
+@click.option("--explain-tests", is_flag=True, help="Include test selection explanations")
+def export_cmd(input_path, output_path, output_format, path, max_classes, tests,
+               test_paths, keep_paths, explain_tests):
+    """Export a saved analysis map as Mermaid class diagrams in Markdown."""
+    try:
+        result = json.loads(input_path.read_text(encoding="utf-8"))
+        markdown = export_mermaid(
+            result, path=path, max_classes=max_classes, tests=tests,
+            test_paths=list(test_paths), keep_paths=list(keep_paths), explain_tests=explain_tests,
+        )
+        output_path.write_text(markdown, encoding="utf-8")
+    except (OSError, ValueError, TypeError, Warning) as error:
+        raise click.ClickException(f"Mermaid export failed: {error}") from error
 
 
 @cli.command("analyze")

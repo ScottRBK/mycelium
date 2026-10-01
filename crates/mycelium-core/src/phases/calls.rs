@@ -224,6 +224,38 @@ fn resolve_call(
         }
     };
 
+    // An out-of-line C++ method supplies an explicit owner. Prefer that owner for unqualified
+    // or this-> calls; do not choose the last same-file method when several owners share a name.
+    if let Some((owner, _)) = caller_name.rsplit_once("::") {
+        let target_owner = match qualifier {
+            None | Some("this") => owner,
+            Some(explicit) => explicit,
+        };
+        if let Some(target_id) =
+            st.lookup_exact(file_path, &format!("{target_owner}::{callee_name}"))
+        {
+            return Some(CallEdge {
+                from_symbol: caller_id,
+                to_symbol: target_id.to_string(),
+                confidence: 0.85,
+                tier: "B".into(),
+                reason: "same-owner".into(),
+                line: raw_call.line,
+            });
+        }
+        if st
+            .lookup_fuzzy(callee_name)
+            .iter()
+            .filter(|m| m.file == file_path)
+            .map(|m| m.parent.as_deref())
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+            > 1
+        {
+            return None;
+        }
+    }
+
     // --- Tier A: Import-resolved ---
     if let Some(imported_files) = import_map.get(file_path) {
         for imported_file in imported_files {
