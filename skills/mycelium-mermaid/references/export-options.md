@@ -2,6 +2,7 @@
 
 Apply these to `mycelium-map export INPUT -o OUTPUT`. Use repository-relative paths for selectors;
 input and output file paths are ordinary filesystem paths.
+When using uvx, prefix each command below with `uvx --no-build`.
 
 ## Scope and diagram size
 

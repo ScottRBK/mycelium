@@ -22,20 +22,27 @@ or a request for one diagram, read [export options](references/export-options.md
 
 This step is complete when the input, output path, scope, and test selection are known.
 
-## 2. Check the available CLI
+## 2. Use the PyPI package
 
-Run `mycelium-map export --help` and verify that the required options are available. Both the Python
-and native CLIs use this command name and the same Rust exporter.
-
-If Mycelium is absent, install `mycelium-map` in a tool environment or virtual environment using
-Python 3.12 or newer. The skill installer installs instructions only. Source builds need Rust.
-If an installed release lacks `export` or a needed option, use an up-to-date Mycelium checkout:
+The skill installer installs instructions only. Run the PyPI package through `uvx` and verify that
+the required export options are available:
 
 ```bash
-cargo run --manifest-path /path/to/mycelium/Cargo.toml -p mycelium-cli -- export --help
+uvx --no-build mycelium-map export --help
 ```
 
-Use that Cargo command prefix in place of `mycelium-map` for the following commands when needed.
+Version 0.4.1+ provides wheels for standard CPython 3.12+ on Linux with glibc (x86_64, aarch64),
+macOS (x86_64, aarch64), and Windows (x86_64). They include the Rust engine; no Rust toolchain is
+needed. `--no-build` prevents an implicit source build. If no compatible wheel is available, check
+the Python version and platform against the release files on PyPI. Refresh an outdated cached
+package with `uvx --refresh --no-build mycelium-map export --help`.
+
+An existing `mycelium-map` installation can replace the `uvx --no-build mycelium-map` prefix in the
+commands below. If uv is unavailable, install `mycelium-map>=0.4.1` with
+`python -m pip install --upgrade --only-binary=mycelium-map 'mycelium-map>=0.4.1'` in an activated
+virtual environment, then check `mycelium-map export --help`. If a needed option is still absent,
+report the limitation. Use source builds only for tasks developing or testing Mycelium itself.
+
 This step is complete when a working CLI exposes the required export options.
 
 ## 3. Analyse and export
@@ -46,19 +53,19 @@ For example, in a POSIX shell, substitute the selected repository and output pat
 
 ```bash
 diagram_tmp=$(mktemp -d)
-mycelium-map analyze /path/to/repo -o "$diagram_tmp/map.json" --quiet
-mycelium-map export "$diagram_tmp/map.json" --format mermaid -o /path/to/class-diagram.md
+uvx --no-build mycelium-map analyze /path/to/repo -o "$diagram_tmp/map.json" --quiet
+uvx --no-build mycelium-map export "$diagram_tmp/map.json" -o /path/to/class-diagram.md
 ```
 
 For a supplied map, export it directly:
 
 ```bash
-mycelium-map export /path/to/map.json --format mermaid -o /path/to/class-diagram.md
+uvx --no-build mycelium-map export /path/to/map.json -o /path/to/class-diagram.md
 ```
 
 Analyse the whole repository, then apply `--path` at export time for a narrower view; this keeps
 repository context available to analysis. Automatic language detection handles mixed repositories.
-If a map has no declaration data, rerun analysis with an export-capable build. If the source is
+If a map has no declaration data, rerun analysis with version 0.4.0 or newer. If the source is
 unavailable, report that limitation instead of reconstructing the diagram by hand.
 
 This step is complete when the command succeeds and writes the requested Markdown file.

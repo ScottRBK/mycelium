@@ -1,0 +1,31 @@
+name: Test built wheels
+
+on:
+  workflow_call:
+    inputs:
+      platforms:
+        description: Native runners and their corresponding wheel artifacts
+        type: string
+        default: '[{"os":"ubuntu-latest","target":"x86_64-unknown-linux-gnu"}]'
+
+jobs:
+  wheel-tests:
+    name: ${{ matrix.platform.target }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+        platform: ${{ fromJSON(inputs.platforms) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-${{ matrix.platform.target }}
+          path: dist
+      - name: Test installation, bindings, and uvx without Rust
+        run: python tests/check_wheel.py dist

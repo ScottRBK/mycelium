@@ -60,7 +60,20 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.target }}
-          path: dist
+          path: dist/*.whl
+          if-no-files-found: error
+
+  test-wheels:
+    name: Validate release wheels
+    needs: build-wheels
+    uses: ./.github/workflows/test-wheels.yml
+    with:
+      platforms: >-
+        [{"os":"ubuntu-latest","target":"x86_64-unknown-linux-gnu"},
+         {"os":"ubuntu-24.04-arm","target":"aarch64-unknown-linux-gnu"},
+         {"os":"macos-15-intel","target":"x86_64-apple-darwin"},
+         {"os":"macos-latest","target":"aarch64-apple-darwin"},
+         {"os":"windows-latest","target":"x86_64-pc-windows-msvc"}]
 
   build-sdist:
     name: Build source distribution
@@ -95,7 +108,7 @@ jobs:
   publish:
     name: Publish to PyPI
     runs-on: ubuntu-latest
-    needs: [build-wheels, build-sdist]
+    needs: [test-wheels, build-sdist]
     environment: pypi
 
     steps:

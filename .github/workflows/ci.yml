@@ -37,8 +37,8 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-  python-bindings:
-    name: Python Binding Tests
+  build-wheel:
+    name: Build Python wheel
     runs-on: ubuntu-latest
 
     steps:
@@ -52,14 +52,20 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Create virtualenv
-        run: python -m venv .venv
+      - name: Build wheel once for every Python version
+        uses: PyO3/maturin-action@v1
+        with:
+          target: x86_64-unknown-linux-gnu
+          args: --release --locked --out dist -i python3.12
+          manylinux: auto
 
-      - name: Install maturin and deps
-        run: .venv/bin/pip install maturin pytest click rich
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-x86_64-unknown-linux-gnu
+          path: dist/*.whl
+          if-no-files-found: error
 
-      - name: Build and install
-        run: .venv/bin/maturin develop --release
-
-      - name: Run binding tests
-        run: .venv/bin/pytest tests/test_bindings.py -v
+  python-bindings:
+    name: Installed wheel tests
+    needs: build-wheel
+    uses: ./.github/workflows/test-wheels.yml

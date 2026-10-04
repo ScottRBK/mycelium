@@ -389,6 +389,7 @@ mycelium-map analyze tests/fixtures/csharp_simple -o /tmp/mycelium-map.json --ve
 
 Rebuild with `maturin develop --release` after Rust changes before testing the Python interface.
 Python requires 3.12 or newer. Maturin builds the extension as `mycelium._mycelium_rust`.
+The extension uses `abi3-py312`: one wheel per platform supports standard CPython 3.12+.
 
 ## Test Philosophy
 
@@ -403,6 +404,7 @@ check the extracted records; a resolution fix should also check the resulting gr
 | Rust integration | `crates/mycelium-core/tests/` | Fixtures, phases, pipeline, JSON. | Yes |
 | Mermaid checkpoints | `tests/checkpoints/` | Commit-pinned external source to Markdown. | Local |
 | Python bindings | `tests/test_bindings.py` | Extension API, config, progress, and exports. | Yes |
+| Wheel install | `tests/check_wheel.py` | Installed bindings and uvx without Rust. | Yes |
 
 ```bash
 # All Rust tests, including fixture-based full-pipeline checks
@@ -418,6 +420,10 @@ cargo fmt --all -- --check
 
 # After building the extension in the active virtual environment
 python -m pytest tests/test_bindings.py -v
+
+# Build once, then run with each Python version; requires uv on PATH
+maturin build --release -i python3.12 --out /tmp/mycelium-wheels
+python3.13 tests/check_wheel.py /tmp/mycelium-wheels
 ```
 
 Keep code and Markdown lines within 100 columns. Update these diagrams when the main types or
@@ -426,9 +432,11 @@ their relationships change. When modifying third-party library usage, consult th
 ## CI/CD
 
 - `.github/workflows/ci.yml`: pushes and pull requests to `master` run Rust tests, Clippy,
-  formatting checks, and Python binding tests on Ubuntu with Python 3.12.
+  formatting checks, and build one wheel on Ubuntu with Python 3.12. `test-wheels.yml` installs
+  that same artifact on Python 3.12, 3.13, and 3.14, outside the checkout and without Rust on PATH.
 - `.github/workflows/release.yml`: `v*` tags build Linux and macOS wheels for x86_64 and aarch64,
-  Windows wheels for x86_64, and a source distribution, then publish to PyPI as `mycelium-map`.
+  Windows wheels for x86_64, and a source distribution. Publication to PyPI as `mycelium-map`
+  requires each platform's wheel to pass `test-wheels.yml` on all three Python versions.
 
 ## Known Limitations
 

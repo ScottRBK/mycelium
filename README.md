@@ -20,10 +20,26 @@ Mycelium runs a six-phase pipeline over your source code and outputs a single JS
 ## Install
 
 ```bash
-pip install mycelium-map
+uvx mycelium-map analyze .
 ```
 
-Pre-built binary wheels are available for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64). Source builds require a Rust toolchain.
+Version 0.4.1 and newer include the compiled Rust engine in wheels for standard CPython 3.12+ on
+Linux with glibc (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64). These installations
+need no Rust toolchain. The same wheel is tested on Python 3.12, 3.13, and 3.14 for each platform.
+`uvx` runs the CLI in a temporary tool environment; add `--no-build` to require prebuilt packages:
+
+```bash
+uvx --no-build mycelium-map export map.json -o diagram.md
+```
+
+For a persistent CLI and the Python API, install into an activated virtual environment:
+
+```bash
+python -m pip install --upgrade --only-binary=mycelium-map mycelium-map
+```
+
+Building from source requires Rust. Platforms without wheels, PyPy, and free-threaded Python are
+outside the prebuilt support above; the binary-only commands fail instead of compiling locally.
 
 ## Agent skills
 
@@ -42,9 +58,9 @@ Or select the skill explicitly; add `--global` to make it available across proje
 npx skills add ScottRBK/mycelium --skill mycelium-mermaid
 ```
 
-The skill provides agent instructions. Install Mycelium separately as described above, and check
-`mycelium-map export --help` for Mermaid export support. Then ask your agent to use `mycelium-mermaid`
-to generate a class diagram for your repository.
+The skill provides agent instructions and runs the PyPI package through `uvx` or an installed CLI.
+Check `uvx --no-build mycelium-map export --help` for Mermaid export support. Then ask your agent to
+use `mycelium-mermaid` to generate a class diagram for your repository.
 
 ## Usage
 
