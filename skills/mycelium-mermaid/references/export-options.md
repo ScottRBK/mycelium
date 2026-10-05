@@ -12,7 +12,7 @@ Add these to the skill's export command. Path selectors are relative to the anal
 | Explain test selection | `--explain-tests` |
 
 The CLI defaults to eight boxes per diagram. For one diagram, set `--max-classes` to at least the
-included box count. Version 0.4.3+ keeps members together. All resolved connections are retained,
+included box count. Each box keeps all its members. All resolved connections are retained,
 including a list across blocks.
 
 Tests default to excluded; unknown cases remain visible. Inspect files before adding test paths.
@@ -20,7 +20,7 @@ Repeat test/keep selectors as needed. They match whole path components, not glob
 `..`, and unmatched selectors fail. Keep paths override test evidence but cannot restore files
 absent from the map or outside the scope. Include mode validates selectors but ignores filtering.
 
-For language-specific detection questions, read the [test filtering rules][rules]. Use the matching
-release tag for a pinned package. Reanalyse older maps to obtain newer detection evidence.
+For language-specific detection questions, read the [test filtering rules][rules]. Reanalyse older
+maps to obtain newer detection evidence.
 
-[rules]: https://github.com/ScottRBK/mycelium/blob/v0.4.3/docs/mermaid-export.md#test-filtering
+[rules]: https://github.com/ScottRBK/mycelium/blob/master/docs/mermaid-export.md#test-filtering

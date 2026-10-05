@@ -7,7 +7,7 @@ description: >-
 
 # Mycelium class diagrams
 
-Use the PyPI exporter through `uvx`; Mycelium supplies the declarations and relationships.
+Use the latest PyPI release through `uvx`; Mycelium supplies the declarations and relationships.
 Run commands from the target repository. Bundled reference links resolve beside this `SKILL.md`,
 regardless of the working directory. No Mycelium checkout is needed.
 
@@ -21,9 +21,8 @@ For scope, test selection, or multiple diagram blocks, read
 
    ```bash
    diagram_tmp=$(mktemp -d)
-   uvx --no-build --from 'mycelium-map>=0.4.3' mycelium-map \
-     analyze . -o "$diagram_tmp/map.json" --quiet
-   uvx --no-build --from 'mycelium-map>=0.4.3' mycelium-map \
+   uvx --no-build mycelium-map@latest analyze . -o "$diagram_tmp/map.json" --quiet
+   uvx --no-build mycelium-map@latest \
      export "$diagram_tmp/map.json" -o class-diagram.md --max-classes 1000
    ```
 
@@ -35,5 +34,5 @@ For scope, test selection, or multiple diagram blocks, read
    Preserve full names, keys, and relationship lists; change options and regenerate to adjust them.
 
 3. Export the same map with identical options and version to a temporary file; compare bytes.
-   Deliver the Markdown link, diagram count, and material warnings. Calls are static heuristics;
-   distinguish a Markdown check from a rendered preview.
+   Deliver the Markdown link, exporter version, diagram count, and material warnings.
+   Calls are static heuristics; distinguish a Markdown check from a rendered preview.

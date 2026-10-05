@@ -1,10 +1,9 @@
 # Running without uv
 
-Use an installed `mycelium-map` 0.4.3+, or install it into an activated Python 3.12+
-virtual environment:
+Install or upgrade the package in an activated Python 3.12+ virtual environment:
 
 ```bash
-python -m pip install --upgrade --only-binary=mycelium-map 'mycelium-map>=0.4.3'
+python -m pip install --upgrade --only-binary=mycelium-map mycelium-map
 mycelium-map export --help
 ```
 
