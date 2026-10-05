@@ -21,9 +21,9 @@ For scope, test selection, or multiple diagram blocks, read
 
    ```bash
    diagram_tmp=$(mktemp -d)
-   uvx --no-build --from 'mycelium-map>=0.4.2' mycelium-map \
+   uvx --no-build --from 'mycelium-map>=0.4.3' mycelium-map \
      analyze . -o "$diagram_tmp/map.json" --quiet
-   uvx --no-build --from 'mycelium-map>=0.4.2' mycelium-map \
+   uvx --no-build --from 'mycelium-map>=0.4.3' mycelium-map \
      export "$diagram_tmp/map.json" -o class-diagram.md --max-classes 1000
    ```
 

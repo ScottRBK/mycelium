@@ -270,10 +270,8 @@ pub fn export_mermaid_report(
     out.push_str(
         "Fields are associations, not lifetime ownership. Calls are static heuristic estimates.\n",
     );
-    out.push_str(
-        "Views contain at most 40 members per box. Connections within each view are uncapped.\n",
-    );
-    out.push_str("Repeated boxes continue their members; parallel arrows are summarized.\n");
+    out.push_str("Members and connections within each view are uncapped.\n");
+    out.push_str("Parallel arrows are summarized.\n");
     out.push_str("Cross-diagram relationships are retained in the complete relationship list.\n\n");
     out.push_str(&format!(
         "Included: {} boxes. Calls without in-scope member endpoints: {omitted_calls}.\n\n",
@@ -637,18 +635,9 @@ fn pages(classes: &[Class], maximum: usize) -> Vec<Vec<(usize, &[Member])>> {
     let mut pages = Vec::new();
     let mut current = Vec::new();
     for (index, class) in classes.iter().enumerate() {
-        if class.members.len() > 40 {
-            if !current.is_empty() {
-                pages.push(std::mem::take(&mut current));
-            }
-            for part in class.members.chunks(40) {
-                pages.push(vec![(index, part)]);
-            }
-        } else {
-            current.push((index, class.members.as_slice()));
-            if current.len() == maximum {
-                pages.push(std::mem::take(&mut current));
-            }
+        current.push((index, class.members.as_slice()));
+        if current.len() == maximum {
+            pages.push(std::mem::take(&mut current));
         }
     }
     if !current.is_empty() {

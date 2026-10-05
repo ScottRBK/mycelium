@@ -14,7 +14,7 @@
       "+id: UUID",
       "--|>"
     ],
-    "sha256": "7513a8ce0230dc7009581355aa728826734468fa43cb5c3290c789db94792576",
+    "sha256": "0e7eebc68f2d0a0b4ebdffa9540e67531d9ec05881907e5ebe9121bb5300e1ff",
     "members": {
       "User": [
         "+id: UUID"
@@ -42,7 +42,7 @@
       "absent": [
         "[\"StreamingASGITransport\"]"
       ],
-      "sha256": "6a7814f243c27d55ae32e6dfc09539ba12e4727026d9b63897bea047d6335d5d",
+      "sha256": "81f2bb4919c9e060206d9ba0d5279ead17a342243f97a7e42ed0240ff00fea50",
       "automatic": {
         "contains": [
           "[\"StreamingASGITransport\"]",
@@ -54,7 +54,7 @@
           "+reranker_adapter()",
           "+postgres_container()"
         ],
-        "sha256": "dce6cbf88d5c4dac454a11ece8414656d700ee7f35339f3988f5c651d207ab38"
+        "sha256": "cb53be87ddfc15a3a371530f442a8140b809f9adf0dcd0077ba5ae265bcada7a"
       }
     }
   },
@@ -73,7 +73,7 @@
       "+new(provider: P) Self",
       "<<trait>>"
     ],
-    "sha256": "d32b888e16d092655304c9d0af6581c520d4ea36c72fce1f801c0c8c06b96c7d",
+    "sha256": "99e0e96bd412c9b72ef5a0ff35753e650ed4afc213168539ea44e048f3cbb3dd",
     "members": {
       "Gateway": [
         "-provider: P",
@@ -103,7 +103,7 @@
         "[\"E2eConfig\"]",
         "test_deserialise_moels()"
       ],
-      "sha256": "12fb9fdc77f96f480f3943c89c68ef2c4ea0a5f9c5d493f81fc4f9669783b60e"
+      "sha256": "8edbc638b9a4d4ebe20a45cd319c2a32bdfa65442aa56d3351ba2d95a6162624"
     }
   },
   {
@@ -121,7 +121,7 @@
       "+total_tokens: int",
       "+redaction_values()"
     ],
-    "sha256": "6ba733a5bac31ce8db1162d272b5b5777594fcbc73a07e4827f75b113de4d7ea",
+    "sha256": "ea74258a3b553b9a2901b7c3b93f9771560f58a86d011acde41e9bf886272a7d",
     "members": {
       "DockerRunResult": [
         "+score: float",
@@ -150,7 +150,7 @@
       "absent": [
         "test_build_eval_session_accepts_valid_config("
       ],
-      "sha256": "4edd48fb3152696413c4f3bfd55c6334d8070b048bdfc77a06ec829df2f03e92"
+      "sha256": "0f3d6f6a854415963ac8b31ee9a72c4746265d3d7c526db2c214b44620065665"
     }
   },
   {
@@ -170,7 +170,7 @@
       "..|>",
       " --> "
     ],
-    "sha256": "8e8521117ee9a366de0f96aad7afe5783c7f071a7fc0627d22b05e692cc65b2a",
+    "sha256": "3b72c3971c857f886dcb1c771eedfb4aa7c6479938ec70be63fadc106006fa9e",
     "members": {
       "BaseRule": [
         "#TimeProvider: ITimeProvider",
@@ -197,14 +197,14 @@
       "absent": [
         "[\"StringExtensionsTests\"]"
       ],
-      "sha256": "7899010804afc567d26b4c056e724964042b15d2bfeb6eeb82c0c85f0df3ca59",
+      "sha256": "d17af8d00b4d765ade8fbba645a5c26e12d7f4ee7216e160b374f34d1b25cd9d",
       "automatic": {
         "contains": [
           "[\"StringExtensionsTests\"]",
           "[\"StringExtensions\"]"
         ],
         "absent": [],
-        "sha256": "21bf0650822fe41e383e37d9778f94020fdb3beecc9ac42f7b2914cba167e8c8"
+        "sha256": "17ee6840411d867cfb13780e6074ef439f934605d46b3cbda1512b08dff5bb95"
       }
     }
   },
@@ -222,7 +222,7 @@
       "<<interface>>",
       "<<module>>"
     ],
-    "sha256": "41ea9defdabb85f74aca1f39473cad57546a6fd95b43f59faf1323fc281b5f98",
+    "sha256": "0b898933d9f5b8d492213a2cf9f1e1179d60819ee754d587262edb4551fbc5c6",
     "members": {
       "src/concurrency.ts": [
         "mapConcurrent(items:"
@@ -251,7 +251,7 @@
         "[\"ThrowingLogger\"]",
         "reviewSubmission("
       ],
-      "sha256": "1a3cfb9346dcb5c1252698ca8b00e8618e8c105b84544535ff22ac47836225e3",
+      "sha256": "1b9011d53a9d6630c76da829158ee482b0da269297b00977d15ee51a98761bb0",
       "automatic": {
         "contains": [
           "[\"PiMemoryModel\"]",
@@ -261,7 +261,7 @@
         "absent": [
           "[\"ThrowingLogger\"]"
         ],
-        "sha256": "7fd31f350583cdeca66e3a52904765f905a48e450b8d0e4cc3808cdd01f2d3ea"
+        "sha256": "b5cb33489ceea0c3c5d32822989904e64b2e6c1b62a7c17eb31f22328708ea7b"
       }
     }
   },
@@ -279,7 +279,7 @@
       "openContext()",
       "openContext() calls sharedBrowser()"
     ],
-    "sha256": "0336e1271eab74dd54a156ba251fa0e87fe42caa1d08a8c8c7e3fc7bbf7667ec",
+    "sha256": "498a54b654e47bdf750a21b7cfe3af283cb312943e9a61844f151732f9dc797e",
     "members": {
       "agent/extensions/web-search/src/browser.ts": [
         "sharedBrowser() Promise~Browser~",
@@ -301,7 +301,7 @@
         "[\"SearchReturnsResultsTest\"]",
         "[\"BackendFailureIsLoudTest\"]"
       ],
-      "sha256": "3c5077fb9f1d4074de37ef41acbba3f55f1f1d8877771a783a9636a2b3d18e29",
+      "sha256": "00f39fc3c9184a51733f843f68373815d3dfb4bd09ba67034f403309aee1ad4a",
       "automatic": {
         "contains": [
           "sharedBrowser()",
@@ -312,7 +312,7 @@
           "[\"SearchReturnsResultsTest\"]",
           "[\"BackendFailureIsLoudTest\"]"
         ],
-        "sha256": "6be39a328ddc795281391e2489a570c4252589e96c9ddc6c628eaf3649b98b6f"
+        "sha256": "09cd6c87cf7daad5a27e59b31c573e81bac081b335596cdbd34e61eecfc8f8b6"
       }
     }
   }

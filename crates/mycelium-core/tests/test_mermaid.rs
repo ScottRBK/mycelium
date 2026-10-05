@@ -323,13 +323,13 @@ export async function openContext(): Promise<string> {
 
 #[test]
 fn all_connections_between_visible_boxes_are_drawn() {
-    // Arrange: one source type references 30 distinct types, beyond the former arrow limit.
+    // Arrange: 85 targets exceed both the former arrow limit and the member limit.
     let repo = tempfile::tempdir().unwrap();
     let mut source = String::from("class Hub:\n");
-    for i in 0..30 {
+    for i in 0..85 {
         source.push_str(&format!("    target_{i}: Target{i}\n"));
     }
-    for i in 0..30 {
+    for i in 0..85 {
         source.push_str(&format!("class Target{i}: pass\n"));
     }
     std::fs::write(repo.path().join("models.py"), source).unwrap();
@@ -373,7 +373,7 @@ fn all_connections_between_visible_boxes_are_drawn() {
             .unwrap()
     };
     let hub = box_id("Hub");
-    for i in 0..30 {
+    for i in 0..85 {
         let target = box_id(&format!("Target{i}"));
         let expected = format!("{hub} --> {target} : field target_{i}");
         assert!(
@@ -384,12 +384,17 @@ fn all_connections_between_visible_boxes_are_drawn() {
 }
 
 #[test]
-fn large_exports_split_members_and_preserve_cross_diagram_relationships() {
-    // Arrange: deliberately exceed a single class's display budget.
+fn large_classes_keep_all_members_together_and_respect_the_box_limit() {
+    // Arrange: both fields and methods exceed the former 40-member limit.
     let repo = tempfile::tempdir().unwrap();
     let mut source = String::from("class User:\n");
     for i in 0..85 {
         source.push_str(&format!("    field_{i}: str\n"));
+    }
+    for i in 0..85 {
+        source.push_str(&format!(
+            "    def method_{i}(self) -> str: return self.field_{i}\n"
+        ));
     }
     source.push_str("class Service:\n    user: User\n");
     std::fs::write(repo.path().join("models.py"), source).unwrap();
@@ -401,24 +406,25 @@ fn large_exports_split_members_and_preserve_cross_diagram_relationships() {
         None,
     )
     .unwrap();
-    // Act.
-    let markdown = export_mermaid(
-        &result,
-        &MermaidOptions {
-            max_classes: 1,
+    // Act: the box limit alone controls whether these two types share a diagram.
+    for (max_classes, expected_diagrams) in [(2, 1), (1, 2)] {
+        let options = MermaidOptions {
+            max_classes,
             ..Default::default()
-        },
-    )
-    .unwrap();
-    // Assert: diagrams are bounded without silently dropping fields or cross-view edges.
-    assert!(markdown.matches("```mermaid").count() >= 4, "{markdown}");
-    for i in 0..85 {
-        assert!(markdown.contains(&format!("field_{i}: str")));
-    }
-    assert!(markdown.contains("field user"));
-    for diagram in markdown.split("```mermaid").skip(1) {
-        let block = diagram.split("```").next().unwrap();
-        assert!(block.lines().filter(|line| line.contains("field_")).count() <= 40);
+        };
+        let markdown = export_mermaid(&result, &options).unwrap();
+
+        // Assert: each type appears once, with every member in the same box.
+        assert_eq!(markdown.matches("```mermaid").count(), expected_diagrams);
+        assert_eq!(markdown.matches("[\"User\"]").count(), 1);
+        assert_eq!(markdown.matches("[\"Service\"]").count(), 1);
+        let members = box_members(&markdown, "User");
+        for i in 0..85 {
+            assert!(members.contains(&format!("+field_{i}: str")));
+            assert!(members.contains(&format!("+method_{i}() str")));
+        }
+        assert!(markdown.contains("field user"));
+        assert_eq!(markdown, export_mermaid(&result, &options).unwrap());
     }
 }
 

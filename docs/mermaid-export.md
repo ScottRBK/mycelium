@@ -11,14 +11,16 @@ mycelium-map export map.json -o services.md --path src/services --max-classes 6
 `--path` selects a repository-relative file or directory. It accepts leading `./` and normalizes
 backslashes. A nonempty scope with no declarations reports an error. The default hides declarations
 with supported test evidence. It does not select “important” classes or ask an agent to
-summarise them. Large exports remain large documents, but each diagram has a bounded display:
+summarise them. Large exports remain large documents:
 
 - Eight boxes by default, configurable with `--max-classes`.
-- Forty members per box; larger types continue in subsequent diagrams with the same identity.
+- Every box keeps all its members in the same diagram, with no member cap.
 - Every resolved connection between boxes in a diagram is drawn, with no connection cap.
   Parallel arrows are summarized to avoid overlapping labels.
 - A complete list of resolved relationships, including those crossing diagram boundaries.
 - Type and signature keys for notation that would be too long or unsafe inside Mermaid.
+
+For one diagram, set `--max-classes` to at least the number of included boxes (for example, 1000).
 
 Class, module, method, and field names are shown in full, including module file paths.
 Names, ordering, partitioning, and abbreviations follow fixed rules. Timestamps, local repository

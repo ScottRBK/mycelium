@@ -232,8 +232,9 @@ paths. Custom/global framework discovery and separate test diagrams remain defer
 guide for exact rules.
 
 `ExportResult` abbreviates `Result<String, ExportError>`. An older map without declarations
-reports that analysis must be rerun. Views bound class/member counts and retain resolved
-relationships in a complete list. Calls remain heuristic; fields do not imply exclusive ownership.
+reports that analysis must be rerun. Views bound class counts only; each box keeps all its members.
+Resolved relationships remain in a complete list. Calls remain heuristic; fields do not imply
+exclusive ownership.
 See [Mermaid export](docs/mermaid-export.md) for coverage and checkpoint validation.
 
 ### Language Analysers
