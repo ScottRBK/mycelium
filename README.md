@@ -43,24 +43,28 @@ outside the prebuilt support above; the binary-only commands fail instead of com
 
 ## Agent skills
 
-Install [mycelium-mermaid](skills/mycelium-mermaid/SKILL.md) to generate Mermaid class diagrams as
-Markdown using Mycelium's deterministic exporter.
+Two skills use the PyPI package through `uvx` and work in any repository:
 
-Install it interactively with the [Skills CLI](https://github.com/vercel-labs/skills):
+- [mycelium-mermaid](skills/mycelium-mermaid/SKILL.md) generates a Mermaid class diagram as Markdown.
+- [mycelium-architecture](skills/mycelium-architecture/SKILL.md) uses that generator to write
+  `docs/assets/mycelium_class_diagram.md` and add an `AGENTS.md` instruction to read it before code
+  changes or architectural work.
+
+Install both with the [Skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
-npx skills add ScottRBK/mycelium
+npx skills add ScottRBK/mycelium --skill mycelium-mermaid mycelium-architecture
 ```
 
-Or select the skill explicitly; add `--global` to make it available across projects:
+For diagram generation alone:
 
 ```bash
 npx skills add ScottRBK/mycelium --skill mycelium-mermaid
 ```
 
-The skill provides agent instructions and runs the PyPI package through `uvx` or an installed CLI.
-Check `uvx --no-build mycelium-map export --help` for Mermaid export support. Then ask your agent to
-use `mycelium-mermaid` to generate a class diagram for your repository.
+Add `--global` to make the skills available across projects. Bundled references travel with the
+generator skill; neither skill requires a Mycelium checkout. Ask your agent to use
+`mycelium-mermaid` for a diagram, or `mycelium-architecture` to generate it and update `AGENTS.md`.
 
 ## Usage
 
