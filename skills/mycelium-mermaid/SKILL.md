@@ -31,15 +31,15 @@ the required export options are available:
 uvx --no-build mycelium-map export --help
 ```
 
-Version 0.4.1+ provides wheels for standard CPython 3.12+ on Linux with glibc (x86_64, aarch64),
+Version 0.4.2+ provides wheels for standard CPython 3.12+ on Linux with glibc (x86_64, aarch64),
 macOS (x86_64, aarch64), and Windows (x86_64). They include the Rust engine; no Rust toolchain is
 needed. `--no-build` prevents an implicit source build. If no compatible wheel is available, check
 the Python version and platform against the release files on PyPI. Refresh an outdated cached
 package with `uvx --refresh --no-build mycelium-map export --help`.
 
 An existing `mycelium-map` installation can replace the `uvx --no-build mycelium-map` prefix in the
-commands below. If uv is unavailable, install `mycelium-map>=0.4.1` with
-`python -m pip install --upgrade --only-binary=mycelium-map 'mycelium-map>=0.4.1'` in an activated
+commands below. If uv is unavailable, install `mycelium-map>=0.4.2` with
+`python -m pip install --upgrade --only-binary=mycelium-map 'mycelium-map>=0.4.2'` in an activated
 virtual environment, then check `mycelium-map export --help`. If a needed option is still absent,
 report the limitation. Use source builds only for tasks developing or testing Mycelium itself.
 

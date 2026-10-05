@@ -23,7 +23,7 @@ Mycelium runs a six-phase pipeline over your source code and outputs a single JS
 uvx mycelium-map analyze .
 ```
 
-Version 0.4.1 and newer include the compiled Rust engine in wheels for standard CPython 3.12+ on
+Version 0.4.2 and newer include the compiled Rust engine in wheels for standard CPython 3.12+ on
 Linux with glibc (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64). These installations
 need no Rust toolchain. The same wheel is tested on Python 3.12, 3.13, and 3.14 for each platform.
 `uvx` runs the CLI in a temporary tool environment; add `--no-build` to require prebuilt packages:

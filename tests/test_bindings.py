@@ -85,7 +85,7 @@ def test_export_mermaid_and_python_cli(tmp_path):
     # Assert.
     assert "+name: str" in markdown
     assert invocation.exit_code == 0, invocation.output
-    assert destination.read_text() == markdown
+    assert destination.read_text(encoding="utf-8") == markdown
     with pytest.raises(ValueError, match="rerun analysis"):
         export_mermaid({})
     with pytest.raises(ValueError, match="max_classes"):
@@ -121,7 +121,7 @@ def test_test_filter_options_match_python_cli_and_validate(tmp_path):
     assert "check()" in markdown
     assert "<details>" in markdown
     assert invocation.exit_code == 0, invocation.output
-    assert destination.read_text() == markdown
+    assert destination.read_text(encoding="utf-8") == markdown
     assert "check()" not in export_mermaid(result)
     assert "check()" in export_mermaid(result, tests="include")
     with pytest.raises(ValueError, match="tests must"):
