@@ -14,7 +14,7 @@
       "+id: UUID",
       "--|>"
     ],
-    "sha256": "0e7eebc68f2d0a0b4ebdffa9540e67531d9ec05881907e5ebe9121bb5300e1ff",
+    "sha256": "e3490da27ab1fcf1b22e5a9445d7093cf1112e52776bf15adc2ac3ae101a6fa7",
     "members": {
       "User": [
         "+id: UUID"
@@ -42,19 +42,21 @@
       "absent": [
         "[\"StreamingASGITransport\"]"
       ],
-      "sha256": "81f2bb4919c9e060206d9ba0d5279ead17a342243f97a7e42ed0240ff00fea50",
+      "sha256": "e4615aa9610ef98265710c980b31562a4a08040ebb8b44af7018177ecdbc0f94",
       "automatic": {
         "contains": [
           "[\"StreamingASGITransport\"]",
           "[\"HarnessConfig\"]",
-          "python.pytest-fixture"
+          "python.pytest-fixture",
+          "handle_async_request() constructs _StreamingBody",
+          "http_client() constructs StreamingASGITransport"
         ],
         "absent": [
           "+embedding_adapter()",
           "+reranker_adapter()",
           "+postgres_container()"
         ],
-        "sha256": "cb53be87ddfc15a3a371530f442a8140b809f9adf0dcd0077ba5ae265bcada7a"
+        "sha256": "d4a61e57881bbd8cc6f51b941eaf6743c40df79ea22fcd868f876045282a33a8"
       }
     }
   },
@@ -73,7 +75,7 @@
       "+new(provider: P) Self",
       "<<trait>>"
     ],
-    "sha256": "99e0e96bd412c9b72ef5a0ff35753e650ed4afc213168539ea44e048f3cbb3dd",
+    "sha256": "e45b3f850cd9c88f080aa535961074b4e08d37fb99d2f0d5d3d7e0827612c273",
     "members": {
       "Gateway": [
         "-provider: P",
@@ -103,7 +105,7 @@
         "[\"E2eConfig\"]",
         "test_deserialise_moels()"
       ],
-      "sha256": "8edbc638b9a4d4ebe20a45cd319c2a32bdfa65442aa56d3351ba2d95a6162624"
+      "sha256": "06e5b279759e8ca4a4965a08a4eeb16e29b82eea70cf78a251ecfb4cd4dbab94"
     }
   },
   {
@@ -121,7 +123,7 @@
       "+total_tokens: int",
       "+redaction_values()"
     ],
-    "sha256": "ea74258a3b553b9a2901b7c3b93f9771560f58a86d011acde41e9bf886272a7d",
+    "sha256": "0c17a8bbc8ce0bac89c4e32c6edf02b9a8c8f31e6b918e7e46dabd7d8407258d",
     "members": {
       "DockerRunResult": [
         "+score: float",
@@ -150,7 +152,7 @@
       "absent": [
         "test_build_eval_session_accepts_valid_config("
       ],
-      "sha256": "0f3d6f6a854415963ac8b31ee9a72c4746265d3d7c526db2c214b44620065665"
+      "sha256": "d99272d10d18e9a1d3848016318e8ff2c842e7ab87503fb137104796686bd543"
     }
   },
   {
@@ -170,7 +172,7 @@
       "..|>",
       " --> "
     ],
-    "sha256": "3b72c3971c857f886dcb1c771eedfb4aa7c6479938ec70be63fadc106006fa9e",
+    "sha256": "d35f38747f20fe1b93d6d47166d35f9305031bb4a9cf88209e60e0e50ba76098",
     "members": {
       "BaseRule": [
         "#TimeProvider: ITimeProvider",
@@ -197,14 +199,14 @@
       "absent": [
         "[\"StringExtensionsTests\"]"
       ],
-      "sha256": "d17af8d00b4d765ade8fbba645a5c26e12d7f4ee7216e160b374f34d1b25cd9d",
+      "sha256": "7bf1d43fe434bdbd89583331d5d391ce0f66d14f602094398c0c8f2bb92fa1e4",
       "automatic": {
         "contains": [
           "[\"StringExtensionsTests\"]",
           "[\"StringExtensions\"]"
         ],
         "absent": [],
-        "sha256": "17ee6840411d867cfb13780e6074ef439f934605d46b3cbda1512b08dff5bb95"
+        "sha256": "55deff63f2da9164f3a623bb1240a2f8e97883886db07038f18b9cd1b5acabf7"
       }
     }
   },
@@ -222,7 +224,7 @@
       "<<interface>>",
       "<<module>>"
     ],
-    "sha256": "0b898933d9f5b8d492213a2cf9f1e1179d60819ee754d587262edb4551fbc5c6",
+    "sha256": "2f82392b3a6332b5cd3d9e6c369177ce94ef404bf90f61e863d740a9a1a4ae94",
     "members": {
       "src/concurrency.ts": [
         "mapConcurrent(items:"
@@ -245,23 +247,29 @@
       ],
       "contains": [
         "[\"PiMemoryModel\"]",
-        "parseModelResponse("
+        "parseModelResponse(",
+        "completeWithSubmission() constructs ModelSubmissionError",
+        "resolveMemoryModel() constructs PiMemoryModel",
+        "requestOptions() calls transformHeaders()"
       ],
       "absent": [
         "[\"ThrowingLogger\"]",
         "reviewSubmission("
       ],
-      "sha256": "1b9011d53a9d6630c76da829158ee482b0da269297b00977d15ee51a98761bb0",
+      "sha256": "010f7eeacc695f044e01cc5776a012f75e76f49438e5f21007886a82448f69f6",
       "automatic": {
         "contains": [
           "[\"PiMemoryModel\"]",
           "reviewSubmission(",
-          "javascript.node-callback"
+          "javascript.node-callback",
+          "completeWithSubmission() constructs ModelSubmissionError",
+          "resolveMemoryModel() constructs PiMemoryModel",
+          "requestOptions() calls transformHeaders()"
         ],
         "absent": [
           "[\"ThrowingLogger\"]"
         ],
-        "sha256": "b5cb33489ceea0c3c5d32822989904e64b2e6c1b62a7c17eb31f22328708ea7b"
+        "sha256": "5ae6b2cf36bdb589e408882911b0ebb881178e186f0f33e8cbc4fea7917281d9"
       }
     }
   },
@@ -279,7 +287,7 @@
       "openContext()",
       "openContext() calls sharedBrowser()"
     ],
-    "sha256": "498a54b654e47bdf750a21b7cfe3af283cb312943e9a61844f151732f9dc797e",
+    "sha256": "5ccfe78bfc3a73db9e01a37e96d1ed02178650678a8631469ddfebce294fc8fc",
     "members": {
       "agent/extensions/web-search/src/browser.ts": [
         "sharedBrowser() Promise~Browser~",
@@ -301,7 +309,7 @@
         "[\"SearchReturnsResultsTest\"]",
         "[\"BackendFailureIsLoudTest\"]"
       ],
-      "sha256": "00f39fc3c9184a51733f843f68373815d3dfb4bd09ba67034f403309aee1ad4a",
+      "sha256": "49e6b6d92df94562ad2f27bddb4bfdde1c64cc3db9591cb51f7df1008d05caed",
       "automatic": {
         "contains": [
           "sharedBrowser()",
@@ -312,7 +320,7 @@
           "[\"SearchReturnsResultsTest\"]",
           "[\"BackendFailureIsLoudTest\"]"
         ],
-        "sha256": "09cd6c87cf7daad5a27e59b31c573e81bac081b335596cdbd34e61eecfc8f8b6"
+        "sha256": "471b4a3dd482ae8b6e33be3d7dcfa48878163778fa2ea3e2aabb4490067e8866"
       }
     }
   }

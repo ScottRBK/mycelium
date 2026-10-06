@@ -187,9 +187,23 @@ This is name-based static resolution, not a compiler's import and type checker. 
 out-of-scope bases are reported in warnings. The complete relationship list means all relationships
 resolved by this exporter, not every relationship that might exist at runtime.
 
-Calls use the existing heuristic call edges. Endpoints must match a member's source file, line,
-and name. Their labels identify methods; arrows connect owning boxes. The original JSON retains
-confidence, tier, reason, and call-site line. Unmatched or out-of-scope call endpoints are counted.
+Calls use the existing heuristic call edges. Member endpoints match by source file, line, and name;
+arrows connect their owning boxes. Calls targeting class, struct, or record declarations connect
+directly to those boxes, labelled `build() constructs Widget`. This also covers implicit and
+inherited constructors. Calls resolved to explicit constructor members retain their member labels.
+The original JSON retains confidence, tier, reason, and call-site line.
+
+Calls involving an excluded source occurrence in the selected scope count as removed by test
+filtering even if the other endpoint cannot be displayed. Explicit test paths also apply when a
+call's declaration is missing from the saved declaration model. Other unmatched or out-of-scope
+endpoints count as omitted. Include mode and keep-path overrides retain their usual precedence.
+
+Analysis rejects type-only call targets such as interfaces and traits, and rejects matches between
+unrelated languages. C/C++, C#/VB.NET, and TypeScript/JavaScript remain compatible families. A Rust
+impl record cannot hide a unique callable declaration of the same name. These checks apply to
+import, same-file, global, and interface-implementation resolution; name matching remains heuristic.
+Reanalyse existing maps to correct their call targets or capture C++/VB.NET `new` expressions.
+Already-recorded class-target calls can be exported from saved maps without reanalysis.
 
 ## Coverage and limits
 

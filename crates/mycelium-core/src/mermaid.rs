@@ -210,47 +210,81 @@ pub fn export_mermaid_report(
     };
     let symbols: BTreeMap<_, _> = result.symbols.iter().map(|s| (s.id.as_str(), s)).collect();
     let mut members_by_location: BTreeMap<_, Vec<_>> = BTreeMap::new();
+    let mut types_by_location: BTreeMap<_, Vec<_>> = BTreeMap::new();
     for class in &all_classes {
+        if matches!(class.kind.as_str(), "class" | "struct" | "record") {
+            types_by_location
+                .entry((class.file.as_str(), class.line, class.name.as_str()))
+                .or_default()
+                .push(CallEndpoint {
+                    owner: class,
+                    member: None,
+                });
+        }
         for member in &class.members {
             members_by_location
                 .entry((member.file.as_str(), member.line, member.name.as_str()))
                 .or_default()
-                .push((class.id.as_str(), member));
+                .push(CallEndpoint {
+                    owner: class,
+                    member: Some(member),
+                });
         }
     }
+    let retained_type_ids: BTreeSet<_> = retained.iter().map(|c| c.id.as_str()).collect();
     let retained_locations: BTreeSet<_> = retained_classes
         .iter()
         .flat_map(|c| {
             c.members
                 .iter()
                 .map(|m| (c.id.as_str(), m.file.as_str(), m.line, m.name.as_str()))
+                .chain(
+                    std::iter::once((c.id.as_str(), c.file.as_str(), c.line, c.name.as_str()))
+                        .filter(|_| retained_type_ids.contains(c.id.as_str())),
+                )
         })
         .collect();
     let locate = |id: &str| {
         let symbol = symbols.get(id)?;
-        let matches =
-            members_by_location.get(&(symbol.file.as_str(), symbol.line, symbol.name.as_str()))?;
+        let locations = if matches!(symbol.symbol_type.as_str(), "Class" | "Struct" | "Record") {
+            &types_by_location
+        } else {
+            &members_by_location
+        };
+        let matches = locations.get(&(symbol.file.as_str(), symbol.line, symbol.name.as_str()))?;
         (matches.len() == 1).then(|| matches[0])
     };
     let mut omitted_calls = 0;
     let mut filtered_calls = 0;
+    let excluded = |id: &str, endpoint: Option<CallEndpoint<'_>>| {
+        let Some(symbol) = symbols.get(id) else {
+            return false;
+        };
+        let in_scope = endpoint.map_or_else(
+            || filtering::matches_path(&symbol.file, &prefix),
+            |e| stable_ids.contains_key(e.owner.id.as_str()),
+        );
+        in_scope
+            && (filter.excludes_file(&symbol.file)
+                || endpoint.is_some_and(|e| !retained_locations.contains(&e.location())))
+    };
     for call in &result.calls {
-        if let (Some((from, caller)), Some((to, callee))) = (locate(&call.from), locate(&call.to)) {
+        let caller = locate(&call.from);
+        let callee = locate(&call.to);
+        if excluded(&call.from, caller) || excluded(&call.to, callee) {
+            filtered_calls += 1;
+            continue;
+        }
+        if let (Some(caller), Some(callee)) = (caller, callee) {
+            let from = caller.owner.id.as_str();
+            let to = callee.owner.id.as_str();
             if stable_ids.contains_key(from) && stable_ids.contains_key(to) {
-                let kept = |owner, member: &Member| {
-                    retained_locations.contains(&(
-                        owner,
-                        member.file.as_str(),
-                        member.line,
-                        member.name.as_str(),
-                    ))
-                };
-                if kept(from, caller) && kept(to, callee) {
-                    let label = format!("{}() calls {}()", caller.name, callee.name);
-                    edges.insert((visible[from], visible[to], "..>".into(), label));
+                let label = if callee.member.is_none() {
+                    format!("{}() constructs {}", caller.name(), callee.owner.name)
                 } else {
-                    filtered_calls += 1;
-                }
+                    format!("{}() calls {}()", caller.name(), callee.name())
+                };
+                edges.insert((visible[from], visible[to], "..>".into(), label));
                 continue;
             }
         }
@@ -274,7 +308,7 @@ pub fn export_mermaid_report(
     out.push_str("Parallel arrows are summarized.\n");
     out.push_str("Cross-diagram relationships are retained in the complete relationship list.\n\n");
     out.push_str(&format!(
-        "Included: {} boxes. Calls without in-scope member endpoints: {omitted_calls}.\n\n",
+        "Included: {} boxes. Calls without in-scope endpoints: {omitted_calls}.\n\n",
         classes.len()
     ));
     out.push_str(&filter.summary(filtered_calls, filtered_edges));
@@ -368,6 +402,28 @@ pub fn export_mermaid_report(
 }
 
 type DiagramEdge = (usize, usize, String, String);
+
+#[derive(Clone, Copy)]
+struct CallEndpoint<'a> {
+    owner: &'a Class,
+    /// Construction may target a type with no declared constructor member.
+    member: Option<&'a Member>,
+}
+
+impl<'a> CallEndpoint<'a> {
+    fn name(self) -> &'a str {
+        self.member.map_or(&self.owner.name, |m| &m.name)
+    }
+
+    fn location(self) -> (&'a str, &'a str, usize, &'a str) {
+        let (file, line) = self
+            .member
+            .map_or((self.owner.file.as_str(), self.owner.line), |m| {
+                (m.file.as_str(), m.line)
+            });
+        (self.owner.id.as_str(), file, line, self.name())
+    }
+}
 
 fn type_edges(
     classes: &[Class],

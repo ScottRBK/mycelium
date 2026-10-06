@@ -154,6 +154,14 @@ impl TestFilter {
             && normalize_path(file).is_ok_and(|normalized| normalized == file)
     }
 
+    /// Explicit paths can classify a call even when its declaration endpoint is unavailable.
+    pub fn excludes_file(&self, file: &str) -> bool {
+        !self.include
+            && self.files.contains(file)
+            && self.test_paths.iter().any(|p| matches_path(file, p))
+            && !self.keep_paths.iter().any(|p| matches_path(file, p))
+    }
+
     pub fn retain(&mut self, raw: &[Class], in_scope: &BTreeSet<String>) -> Vec<Class> {
         if self.include {
             return raw.to_vec();

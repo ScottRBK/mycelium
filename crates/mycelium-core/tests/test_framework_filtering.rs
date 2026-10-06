@@ -631,7 +631,8 @@ fn framework_selection_is_saved_repeatable_and_independent_of_record_order() {
     assert!(!output.contains("fixture() calls") && !output.contains("calls fixture()"));
     assert!(!output.contains("hidden()") && !output.contains("Fake"));
     assert!(
-        output.contains("Calls removed by test filtering: 1."),
+        // Both application -> fixture and fixture -> Service construction are filtered.
+        output.contains("Calls removed by test filtering: 2."),
         "{output}"
     );
 }

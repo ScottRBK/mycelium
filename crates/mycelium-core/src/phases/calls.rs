@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use crate::config::{AnalysisConfig, CallEdge};
-use crate::graph::knowledge_graph::KnowledgeGraph;
+use crate::graph::knowledge_graph::{KnowledgeGraph, NodeData};
 use crate::graph::namespace_index::NamespaceIndex;
 use crate::graph::symbol_table::SymbolTable;
 use crate::languages::AnalyserRegistry;
@@ -100,6 +100,64 @@ pub fn run_calls_phase(
 // Internal helpers
 // ---------------------------------------------------------------------------
 
+/// Calls need a runtime target in a compatible language, including implementation fallbacks.
+fn is_call_target(source_id: &str, target_id: &str, kg: &KnowledgeGraph) -> bool {
+    let Some(NodeData::Symbol {
+        language: Some(source_language),
+        ..
+    }) = kg.get_node_data(source_id)
+    else {
+        return false;
+    };
+    let Some(NodeData::Symbol {
+        symbol_type,
+        language: Some(target_language),
+        ..
+    }) = kg.get_node_data(target_id)
+    else {
+        return false;
+    };
+    let compatible = source_language == target_language
+        || matches!(
+            (source_language.as_str(), target_language.as_str()),
+            ("C" | "C++", "C" | "C++")
+                | ("C#" | "VB.NET", "C#" | "VB.NET")
+                | ("TypeScript" | "JavaScript", "TypeScript" | "JavaScript")
+        );
+    compatible
+        && match symbol_type.as_str() {
+            "Function" | "Method" | "Constructor" | "Delegate" | "Macro"
+            // Value declarations may hold callbacks; the symbol model does not track their types.
+            | "Property" | "Variable" | "Constant" | "Static" => true,
+            "Class" | "Struct" | "Record" => source_language != "C",
+            _ => false,
+        }
+}
+
+/// A same-named type-only record (notably a Rust impl) must not hide a unique runtime target.
+fn call_target_in_file<'a>(
+    st: &'a SymbolTable,
+    kg: &KnowledgeGraph,
+    source_id: &str,
+    file: &str,
+    name: &str,
+) -> Option<&'a str> {
+    // Both indexes contain every symbol name, so a file miss cannot have a fuzzy match.
+    let id = st.lookup_exact(file, name)?;
+    if is_call_target(source_id, id, kg) {
+        return Some(id);
+    }
+    let mut candidates = st
+        .lookup_fuzzy(name)
+        .iter()
+        .filter(|s| s.file == file && is_call_target(source_id, &s.symbol_id, kg));
+    let candidate = candidates.next()?;
+    candidates
+        .next()
+        .is_none()
+        .then_some(candidate.symbol_id.as_str())
+}
+
 /// Build a map from source file -> list of imported file paths.
 fn build_import_map(kg: &KnowledgeGraph) -> HashMap<String, Vec<String>> {
     let mut import_map: HashMap<String, Vec<String>> = HashMap::new();
@@ -178,7 +236,9 @@ fn find_implementation(
         if imported_file == &interface_file {
             continue;
         }
-        if let Some(target_id) = st.lookup_exact(imported_file, callee_name) {
+        if let Some(target_id) =
+            call_target_in_file(st, kg, interface_target_id, imported_file, callee_name)
+        {
             if target_id != interface_target_id && !is_interface_method(target_id, kg) {
                 return Some(target_id.to_string());
             }
@@ -190,6 +250,7 @@ fn find_implementation(
     for m in fuzzy_matches {
         if m.symbol_id != interface_target_id
             && m.file != interface_file
+            && is_call_target(interface_target_id, &m.symbol_id, kg)
             && !is_interface_method(&m.symbol_id, kg)
         {
             return Some(m.symbol_id.clone());
@@ -228,9 +289,13 @@ fn resolve_call(
             None | Some("this") => owner,
             Some(explicit) => explicit,
         };
-        if let Some(target_id) =
-            st.lookup_exact(file_path, &format!("{target_owner}::{callee_name}"))
-        {
+        if let Some(target_id) = call_target_in_file(
+            st,
+            kg,
+            &caller_id,
+            file_path,
+            &format!("{target_owner}::{callee_name}"),
+        ) {
             return Some(CallEdge {
                 from_symbol: caller_id,
                 to_symbol: target_id.to_string(),
@@ -256,7 +321,9 @@ fn resolve_call(
     // --- Tier A: Import-resolved ---
     if let Some(imported_files) = import_map.get(file_path) {
         for imported_file in imported_files {
-            if let Some(target_id) = st.lookup_exact(imported_file, callee_name) {
+            if let Some(target_id) =
+                call_target_in_file(st, kg, &caller_id, imported_file, callee_name)
+            {
                 if target_id == caller_id {
                     continue;
                 }
@@ -296,7 +363,9 @@ fn resolve_call(
             if let Some(imported_files) = import_map.get(file_path) {
                 for imported_file in imported_files {
                     if st.lookup_exact(imported_file, type_name).is_some() {
-                        if let Some(target_id) = st.lookup_exact(imported_file, callee_name) {
+                        if let Some(target_id) =
+                            call_target_in_file(st, kg, &caller_id, imported_file, callee_name)
+                        {
                             if target_id == caller_id {
                                 continue;
                             }
@@ -338,7 +407,7 @@ fn resolve_call(
     }
 
     // --- Tier B: Same-file ---
-    if let Some(target_id) = st.lookup_exact(file_path, callee_name) {
+    if let Some(target_id) = call_target_in_file(st, kg, &caller_id, file_path, callee_name) {
         if target_id != caller_id {
             return Some(CallEdge {
                 from_symbol: caller_id,
@@ -355,7 +424,7 @@ fn resolve_call(
     let fuzzy_matches = st.lookup_fuzzy(callee_name);
     let filtered: Vec<_> = fuzzy_matches
         .iter()
-        .filter(|m| m.file != file_path)
+        .filter(|m| m.file != file_path && is_call_target(&caller_id, &m.symbol_id, kg))
         .collect();
 
     if filtered.len() == 1 {

@@ -266,7 +266,7 @@ fn find_c_calls(
     calls: &mut Vec<RawCall>,
     exclusions: &HashSet<String>,
 ) {
-    if node.kind() == "call_expression" {
+    if matches!(node.kind(), "call_expression" | "new_expression") {
         let (callee_name, qualifier) = extract_c_callee(node, source);
         if let Some(ref name) = callee_name {
             if !exclusions.contains(name) {
@@ -296,6 +296,14 @@ fn find_c_calls(
 }
 
 fn extract_c_callee(node: &Node, source: &[u8]) -> (Option<String>, Option<String>) {
+    if node.kind() == "new_expression" {
+        return (
+            node.child_by_field_name("type")
+                .and_then(|n| n.utf8_text(source).ok())
+                .map(str::to_string),
+            None,
+        );
+    }
     let first = match node.child(0) {
         Some(c) => c,
         None => return (None, None),

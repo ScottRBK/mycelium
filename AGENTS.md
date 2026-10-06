@@ -6,6 +6,13 @@ execution flows. Both the native CLI and the Python package use the same engine.
 
 ## Architecture
 
+Before changing code or reasoning about this repository's architecture, read the
+[Mycelium class diagram](docs/assets/mycelium_class_diagram.md).
+
+The generated diagram includes extraction warnings and heuristic call edges. Verify targets with
+shared names such as `new()` against the source. The focused diagrams below provide a source-checked
+overview.
+
 The diagrams show the current Rust implementation. Boxes are structs unless marked `module`,
 `trait`, or `enum`; module operations are free functions. The main fields show their types, and
 method signatures show parameter and return types. `..>` means uses, `*--` means owns, and `..|>`

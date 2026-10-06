@@ -220,7 +220,7 @@ impl VbNetAnalyser {
         calls: &mut Vec<RawCall>,
         exclusions: &HashSet<String>,
     ) {
-        if node.kind() == "invocation" {
+        if matches!(node.kind(), "invocation" | "new_expression") {
             let (callee_name, qualifier) = extract_callee(node, source);
             if let Some(ref name) = callee_name {
                 if !exclusions.contains(name) {
@@ -252,6 +252,14 @@ impl VbNetAnalyser {
 }
 
 fn extract_callee(node: &Node, source: &[u8]) -> (Option<String>, Option<String>) {
+    if node.kind() == "new_expression" {
+        return (
+            node.child_by_field_name("type")
+                .and_then(|n| n.utf8_text(source).ok())
+                .map(str::to_string),
+            None,
+        );
+    }
     // Try the "target" field first
     let target = node.child_by_field_name("target").or_else(|| node.child(0));
 
