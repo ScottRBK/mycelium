@@ -256,7 +256,10 @@ fn python_dotted_path_resolution() {
     let service_to_models = edges
         .iter()
         .any(|(from, to, _)| from.contains("user_service") && to.contains("models"));
-    let _ = service_to_models;
+    assert!(
+        service_to_models,
+        "user_service.py should import from app/models: {edges:?}"
+    );
 }
 
 #[test]

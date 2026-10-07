@@ -1,6 +1,7 @@
 //! Source declarations retained for diagram export, independently of call-resolution heuristics.
 
 use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
 
 pub const TEST_DETECTOR_VERSION: u32 = 2;
 
@@ -10,6 +11,30 @@ pub struct ClassDiagram {
     pub warnings: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub test_detection: Option<TestDetection>,
+    /// Saved module bindings allow Python type resolution without reopening source files.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub python_bindings: BTreeMap<String, PythonBindings>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PythonBindings {
+    pub names: BTreeMap<String, PythonBinding>,
+    /// Wildcard imports or malformed syntax prevent reliable binding resolution.
+    pub uncertain: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum PythonBinding {
+    /// A from-import, retaining the original name behind an alias.
+    Import(String),
+    /// A directly imported module with an alias, such as `import app.models as models`.
+    Module(String),
+    /// Unaliased module imports sharing a root, such as `import app.models, app.services`.
+    Modules(BTreeSet<String>),
+    /// Line of an unambiguous module-level class declaration.
+    Class(usize),
+    /// A conflicting or unsupported binding; never fall back to a name-based guess.
+    Unknown,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

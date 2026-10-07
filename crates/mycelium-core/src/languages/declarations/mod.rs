@@ -55,6 +55,10 @@ pub(crate) fn extract(
                 });
         }
     } else if language == "Python" {
+        diagram.python_bindings.insert(
+            file.into(),
+            python::bindings(tree.root_node(), source, file),
+        );
         python::walk(
             tree.root_node(),
             source,

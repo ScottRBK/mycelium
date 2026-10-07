@@ -163,6 +163,10 @@ classes, interfaces, traits, structs, enums, module functions, members, types, a
 The shared model lives in `declarations.rs`; `KnowledgeGraph` carries it to `output::build_result`.
 JSON maps contain the additive `class_diagram` section. Older maps still deserialize, but exporting
 one without declarations reports “rerun analysis”; missing signatures are never invented.
+Python files also save `class_diagram.python_bindings`: imports, their local aliases, module-level
+class locations, and uncertain bindings. Export reads these facts from JSON without reopening or
+executing source. Older maps without these facts retain the previous name heuristics and report
+that reanalysis is needed for import-aware resolution.
 
 `mermaid::export_mermaid()` owns resolution, scoping, ordering, partitioning, and escaping. Both
 CLIs and the Python binding call that Rust function. CLI wrappers contain no diagram logic.
@@ -178,8 +182,41 @@ Declared bases produce inheritance or explicit interface/trait implementation ar
 endpoints resolve. Field types produce associations; argument and return types produce dependencies.
 No composition or implicit Go/Python/TypeScript interface satisfaction is inferred.
 
-Type names resolve to a unique same-file declaration, then a unique declaration in the same
-directory, then a unique declaration across the same language family. C and C++ share a family,
+Python imports take precedence over name heuristics for fields, signatures and bases. Direct
+`from module import Type`, aliases, relative imports and qualified module imports select the
+original declaration, even when another directory contains a type with the same name. Targets
+must be unambiguous module-level classes in analysed files; `module.py` and `module/__init__.py`
+are supported. Filtering a target never redirects the relationship to another class.
+
+Plain re-exports are followed through saved bindings, with cycle detection and a limit of 64 binding
+lookups per reference. A from-import checks package attributes before submodules; an imported class
+cannot be mistaken for a same-named module. Imports directly inside a top-level `if TYPE_CHECKING:`
+block also provide annotation bindings when the guard is an unshadowed import from `typing` and
+has no `else` or `elif`. Direct aliases and `typing.TYPE_CHECKING` spellings are supported.
+
+Module lookup first uses the repository-relative dotted path. If it has no exact match, a unique
+dotted suffix supports `src/` layouts and projects beneath a parent directory. Its omitted prefix
+must contain the importing file and have no `__init__.py`, so unrelated compatibility modules cannot
+stand in for external imports. Multiple eligible locations remain unresolved. This is static
+import-root inference; Python search paths and runtime import hooks are not executed. Class
+locations and module suffixes are indexed once per export.
+
+Conflicting imports, rebinding, other conditional/local imports, wildcard imports and malformed
+syntax are conservative: uncertain names produce no type arrow. Rebinding checks are file-wide,
+so an unrelated local shadow can also suppress a relationship. Imported nested types are not
+followed; unambiguous same-file nested classes keep their existing name-based resolution. Importing
+a package does not establish bindings to unimported submodules. External imports do not fall back
+to local lookalikes. These rules apply to declaration relationships; call edges retain their own
+heuristics.
+
+When a blocked Python binding has a plausible class in the analysed repository, export reports
+`Unresolved Python binding: Service uses Type` (or `Service base Type` for a base class).
+`Ambiguous type` is reserved for name-based resolution without usable binding evidence. External
+member types with no repository candidate remain quiet; unresolved external bases keep their
+existing warning. Successfully resolved targets hidden by test filtering do not produce warnings.
+
+Without binding evidence, type names resolve to a unique same-file declaration, then a unique
+declaration in the same directory, then across the same language family. C and C++ share a family,
 as do TypeScript and JavaScript. Ambiguous names remain unresolved; qualified names are not split
 into unqualified tokens. Python quoted annotations resolve as forward references; `Literal[...]`
 strings and `Annotated` metadata remain values. Rust lifetime names do not hide the adjacent type.

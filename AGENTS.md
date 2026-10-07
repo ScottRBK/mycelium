@@ -191,6 +191,19 @@ classDiagram
         +classes: Vec~Class~
         +warnings: Vec~String~
         +test_detection: Option~TestDetection~
+        +python_bindings: PythonBindingMap
+    }
+    class PythonBindings {
+        +names: PythonNameMap
+        +uncertain: bool
+    }
+    class PythonBinding {
+        <<enum>>
+        Import
+        Module
+        Modules
+        Class
+        Unknown
     }
     class Class {
         +id: String
@@ -223,10 +236,20 @@ classDiagram
         +export_mermaid(result: &AnalysisResult, options: &MermaidOptions) ExportResult
     }
     ClassDiagram *-- Class : contains declaration records
+    ClassDiagram *-- PythonBindings : stores bindings by source file
+    PythonBindings *-- PythonBinding : stores bindings by local name
     Class *-- Member : contains member records
     mermaid ..> ClassDiagram : reads
     mermaid ..> MermaidOptions : reads
 ```
+
+`PythonBindingMap` is `BTreeMap<String, PythonBindings>`; `PythonNameMap` is
+`BTreeMap<String, PythonBinding>`. Python imports and aliases select declaration relationships
+before name heuristics. Bindings are saved during parsing, so export needs only JSON. Conflicting
+or unsupported bindings suppress arrows. Older maps retain legacy heuristics and request reanalysis.
+Direct module imports remain distinct from imported attributes; re-exports retain that distinction.
+Export indexes class locations and module paths once. See the export guide for supported imports,
+typing guards, module-root inference and conservative file-wide rebinding checks.
 
 The map stores versioned test evidence without removing analysis facts. Export defaults to excluding
 Rust `#[test]`/literal `cfg(test)`, Go `_test.go`, and supported Python, .NET, Java and JS/TS

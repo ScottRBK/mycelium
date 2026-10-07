@@ -323,5 +323,97 @@
         "sha256": "471b4a3dd482ae8b6e33be3d7dcfa48878163778fa2ea3e2aabb4490067e8866"
       }
     }
+  },
+  {
+    "name": "forgetful-type-bindings",
+    "repository": "ScottRBK/forgetful",
+    "local_path": "~/development/ai/mcp/forgetful",
+    "commit": "7afcbf19d77fc77faf0264db99f460bdc344087d",
+    "files": [
+      "app/models/activity_models.py",
+      "app/models/entity_models.py",
+      "app/protocols/activity_protocol.py",
+      "app/protocols/entity_protocol.py",
+      "app/services/entity_service.py",
+      "app/events/__init__.py",
+      "app/events/event_bus.py"
+    ],
+    "contains": [
+      "[\"EntityType\"]",
+      "ActivityEntityType"
+    ],
+    "absent": [
+      "Ambiguous type:",
+      "Python import bindings unavailable"
+    ],
+    "members": {
+      "EntityService": [
+        "_emit_event",
+        "list_entities"
+      ]
+    },
+    "relationships": [
+      {
+        "from": [
+          "app/protocols/activity_protocol.py",
+          "ActivityRepository"
+        ],
+        "to": [
+          "app/models/activity_models.py",
+          "EntityType"
+        ],
+        "arrow": "..>",
+        "label": "type in query_events"
+      },
+      {
+        "from": [
+          "app/protocols/entity_protocol.py",
+          "EntityRepository"
+        ],
+        "to": [
+          "app/models/entity_models.py",
+          "EntityType"
+        ],
+        "arrow": "..>",
+        "label": "type in list_entities"
+      },
+      {
+        "from": [
+          "app/services/entity_service.py",
+          "EntityService"
+        ],
+        "to": [
+          "app/models/activity_models.py",
+          "EntityType"
+        ],
+        "arrow": "..>",
+        "label": "type in _emit_event"
+      },
+      {
+        "from": [
+          "app/services/entity_service.py",
+          "EntityService"
+        ],
+        "to": [
+          "app/models/entity_models.py",
+          "EntityType"
+        ],
+        "arrow": "..>",
+        "label": "type in list_entities"
+      },
+      {
+        "from": [
+          "app/services/entity_service.py",
+          "EntityService"
+        ],
+        "to": [
+          "app/events/event_bus.py",
+          "EventBus"
+        ],
+        "arrow": "..>",
+        "label": "type in __init__"
+      }
+    ],
+    "sha256": "eca99d8d4e46ba75aeb432b3b5d4ac8d0caedd22c690629b4ac38f74f7cf6f2a"
   }
 ]

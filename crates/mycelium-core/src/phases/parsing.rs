@@ -79,6 +79,9 @@ pub fn run_parsing_phase(
         }
         kg.class_diagram.classes.extend(declarations.classes);
         kg.class_diagram.warnings.extend(declarations.warnings);
+        kg.class_diagram
+            .python_bindings
+            .extend(declarations.python_bindings);
 
         // Extract symbols
         let mut symbols = analyser.extract_symbols(&tree, &source, file_path);

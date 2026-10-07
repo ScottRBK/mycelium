@@ -7,6 +7,7 @@ use crate::config::AnalysisResult;
 use crate::declarations::{Class, Member};
 
 mod filtering;
+mod python;
 use filtering::TestFilter;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -143,6 +144,14 @@ pub fn export_mermaid_report(
         .map(|(i, c)| (c.id.as_str(), format!("c{i:04}")))
         .collect();
     classes.retain(|c| stable_ids.contains_key(c.id.as_str()));
+    if classes.iter().any(|c| {
+        language_family(&c.file) == "Python" && !diagram.python_bindings.contains_key(&c.file)
+    }) {
+        warnings.insert(
+            "Python import bindings unavailable; rerun analysis to resolve imports and aliases"
+                .into(),
+        );
+    }
     classes.sort_by(|a, b| (&a.file, &a.name, a.line).cmp(&(&b.file, &b.name, b.line)));
     let retained_classes = classes.clone();
     for class in &mut classes {
@@ -180,7 +189,14 @@ pub fn export_mermaid_report(
         .copied()
         .filter(|id| !visible.contains_key(id))
         .collect();
-    let mut edges = type_edges(&classes, &all_classes, &hidden_ids, &mut warnings);
+    let python_types = python::PythonTypes::new(&diagram.python_bindings, &all_classes);
+    let mut edges = type_edges(
+        &classes,
+        &all_classes,
+        &hidden_ids,
+        &python_types,
+        &mut warnings,
+    );
     let filtered_edges = if options.tests == TestMode::Include {
         0
     } else {
@@ -189,6 +205,7 @@ pub fn export_mermaid_report(
             &full_scope,
             &all_classes,
             &BTreeSet::new(),
+            &python_types,
             &mut BTreeSet::new(),
         );
         let identify = |edges: &BTreeSet<DiagramEdge>, classes: &[Class]| -> BTreeSet<_> {
@@ -429,6 +446,7 @@ fn type_edges(
     classes: &[Class],
     all_classes: &[Class],
     hidden_ids: &BTreeSet<&str>,
+    python_types: &python::PythonTypes<'_>,
     warnings: &mut BTreeSet<String>,
 ) -> BTreeSet<DiagramEdge> {
     let visible: BTreeMap<_, _> = classes
@@ -437,14 +455,28 @@ fn type_edges(
         .map(|(i, c)| (c.id.as_str(), i))
         .collect();
     let all_names = name_index(all_classes);
-    let target = |file: &str, name: &str| {
-        resolve(all_classes, &all_names, file, name)
-            .and_then(|i| visible.get(all_classes[i].id.as_str()).copied())
+    let resolve_type = |file: &str, name: &str| {
+        let binding = python_types.resolve(file, name);
+        (
+            binding.unwrap_or_else(|| resolve(all_classes, &all_names, file, name)),
+            binding.is_some(),
+        )
+    };
+    let has_python_candidate = |file: &str, name: &str| {
+        all_names
+            .get(python_types.reference_name(file, name))
+            .is_some_and(|candidates| {
+                candidates
+                    .iter()
+                    .any(|i| language_family(&all_classes[*i].file) == "Python")
+            })
     };
     let mut edges = BTreeSet::new();
     for (i, class) in classes.iter().enumerate() {
         for base in &class.bases {
-            if let Some(j) = target(&class.file, &base.name) {
+            let (resolved, python_binding) = resolve_type(&class.file, &base.name);
+            if let Some(j) = resolved.and_then(|i| visible.get(all_classes[i].id.as_str()).copied())
+            {
                 let arrow = if base.relation == "implements"
                     || (class.kind != "interface" && classes[j].kind == "interface")
                 {
@@ -463,13 +495,21 @@ fn type_edges(
                     }
                     .into(),
                 ));
-            } else if !resolve(all_classes, &all_names, &class.file, &base.name)
-                .is_some_and(|i| hidden_ids.contains(all_classes[i].id.as_str()))
-            {
-                warnings.insert(format!(
-                    "Unresolved or out-of-scope base: {} -> {}",
-                    class.name, base.name
-                ));
+            } else if !resolved.is_some_and(|i| hidden_ids.contains(all_classes[i].id.as_str())) {
+                if resolved.is_none()
+                    && python_binding
+                    && has_python_candidate(&class.file, &base.name)
+                {
+                    warnings.insert(format!(
+                        "Unresolved Python binding: {} base {}",
+                        class.name, base.name
+                    ));
+                } else {
+                    warnings.insert(format!(
+                        "Unresolved or out-of-scope base: {} -> {}",
+                        class.name, base.name
+                    ));
+                }
             }
         }
         for member in &class.members {
@@ -484,7 +524,10 @@ fn type_edges(
                     continue;
                 }
                 for token in type_names(value_type, language_family(&class.file)) {
-                    if let Some(j) = target(&class.file, &token) {
+                    let (resolved, python_binding) = resolve_type(&class.file, &token);
+                    if let Some(j) =
+                        resolved.and_then(|i| visible.get(all_classes[i].id.as_str()).copied())
+                    {
                         if i != j {
                             let (arrow, label) = if member.kind == "field" {
                                 ("-->", format!("field {}", member.name))
@@ -493,11 +536,20 @@ fn type_edges(
                             };
                             edges.insert((i, j, arrow.into(), label));
                         }
-                    } else if all_names
-                        .get(&token)
-                        .is_some_and(|matches| matches.len() > 1)
-                    {
-                        warnings.insert(format!("Ambiguous type: {} uses {token}", class.name));
+                    } else if resolved.is_none() {
+                        if python_binding {
+                            if has_python_candidate(&class.file, &token) {
+                                warnings.insert(format!(
+                                    "Unresolved Python binding: {} uses {token}",
+                                    class.name
+                                ));
+                            }
+                        } else if all_names
+                            .get(&token)
+                            .is_some_and(|matches| matches.len() > 1)
+                        {
+                            warnings.insert(format!("Ambiguous type: {} uses {token}", class.name));
+                        }
                     }
                 }
             }

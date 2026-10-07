@@ -62,6 +62,22 @@ def main():
                 for expected in checkpoint["contains"]:
                     message = f"Missing independently checked fact: {expected}"
                     assert expected.encode() in output, message
+                for unexpected in checkpoint.get("absent", []):
+                    assert unexpected.encode() not in output, f"Unexpected fact: {unexpected}"
+                locations = {
+                    (file, name): box_id
+                    for box_id, name, file in re.findall(
+                        r"^- (c\d+): `([^`]+)` — `([^`]+)`:", output.decode(), re.MULTILINE
+                    )
+                }
+                for relationship in checkpoint.get("relationships", []):
+                    source_id = locations[tuple(relationship["from"])]
+                    target_id = locations[tuple(relationship["to"])]
+                    expected = (
+                        f"- {source_id} {relationship['arrow']} {target_id}: "
+                        f"`{relationship['label']}`"
+                    )
+                    assert expected.encode() in output, f"Missing relationship: {relationship}"
                 for owner, expected_members in checkpoint["members"].items():
                     pattern = r'class \w+\["' + re.escape(owner) + r'"\] \{(.*?)\n    }'
                     boxes = "\n".join(re.findall(pattern, output.decode(), re.DOTALL))
