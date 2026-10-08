@@ -158,7 +158,7 @@ fn analyze(
 /// Export an analysis dictionary as deterministic Mermaid Markdown.
 #[pyfunction]
 #[pyo3(signature = (result, path = "", max_classes = 8, *, tests = "exclude",
-    test_paths = None, keep_paths = None, explain_tests = false))]
+    test_paths = None, keep_paths = None, explain_tests = false, detail = "compact"))]
 #[allow(clippy::too_many_arguments)]
 fn export_mermaid(
     py: Python<'_>,
@@ -169,6 +169,7 @@ fn export_mermaid(
     test_paths: Option<Vec<String>>,
     keep_paths: Option<Vec<String>>,
     explain_tests: bool,
+    detail: &str,
 ) -> PyResult<String> {
     let json: String = py
         .import("json")?
@@ -190,6 +191,11 @@ fn export_mermaid(
             test_paths: test_paths.unwrap_or_default(),
             keep_paths: keep_paths.unwrap_or_default(),
             explain_tests,
+            detail: detail
+                .parse()
+                .map_err(|e: mycelium_core::mermaid::ExportError| {
+                    pyo3::exceptions::PyValueError::new_err(e.to_string())
+                })?,
         },
     )
     .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;

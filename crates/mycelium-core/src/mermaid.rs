@@ -44,6 +44,26 @@ pub struct MermaidOptions {
     pub explain_tests: bool,
     pub test_paths: Vec<String>,
     pub keep_paths: Vec<String>,
+    pub detail: DetailMode,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum DetailMode {
+    #[default]
+    Compact,
+    Full,
+}
+
+impl std::str::FromStr for DetailMode {
+    type Err = ExportError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "compact" => Ok(Self::Compact),
+            "full" => Ok(Self::Full),
+            _ => Err(ExportError::InvalidDetailMode),
+        }
+    }
 }
 
 impl Default for MermaidOptions {
@@ -55,6 +75,7 @@ impl Default for MermaidOptions {
             explain_tests: false,
             test_paths: Vec::new(),
             keep_paths: Vec::new(),
+            detail: DetailMode::Compact,
         }
     }
 }
@@ -67,6 +88,7 @@ pub enum ExportError {
     NoMatchingPath,
     NoMatchingTestPath(String),
     InvalidTestMode,
+    InvalidDetailMode,
 }
 
 impl fmt::Display for ExportError {
@@ -76,6 +98,7 @@ impl fmt::Display for ExportError {
                 write!(f, "test/keep path matches no analysed file: {path}")
             }
             Self::InvalidTestMode => f.write_str("tests must be exclude or include"),
+            Self::InvalidDetailMode => f.write_str("detail must be compact or full"),
             Self::NoMatchingPath => f.write_str("no declarations match the requested path"),
             Self::MissingDeclarations => {
                 f.write_str("map has no class declarations; rerun analysis")
@@ -211,11 +234,11 @@ pub fn export_mermaid_report(
         let identify = |edges: &BTreeSet<DiagramEdge>, classes: &[Class]| -> BTreeSet<_> {
             edges
                 .iter()
-                .map(|(i, j, arrow, label)| {
+                .map(|(i, j, kind, label)| {
                     (
                         classes[*i].id.clone(),
                         classes[*j].id.clone(),
-                        arrow.clone(),
+                        kind.arrow().to_string(),
                         label.clone(),
                     )
                 })
@@ -296,34 +319,69 @@ pub fn export_mermaid_report(
             let from = caller.owner.id.as_str();
             let to = callee.owner.id.as_str();
             if stable_ids.contains_key(from) && stable_ids.contains_key(to) {
+                // Full keeps historical member labels even for explicit constructors.
                 let label = if callee.member.is_none() {
                     format!("{}() constructs {}", caller.name(), callee.owner.name)
                 } else {
                     format!("{}() calls {}()", caller.name(), callee.name())
                 };
-                edges.insert((visible[from], visible[to], "..>".into(), label));
+                // Python/JS constructor-member calls can initialize an existing object.
+                let kind = if callee.member.is_none()
+                    || (matches!(
+                        language_family(&callee.owner.file),
+                        "C#" | "Java" | "VB.NET"
+                    ) && symbols
+                        .get(call.to.as_str())
+                        .is_some_and(|s| s.symbol_type == "Constructor"))
+                {
+                    RelationKind::Constructs
+                } else {
+                    RelationKind::Calls
+                };
+                edges.insert((visible[from], visible[to], kind, label));
                 continue;
             }
         }
         omitted_calls += 1;
     }
+    // Preserve the historical ordering and deduplication independently of semantic grouping.
+    let full_edges: BTreeSet<_> = edges
+        .iter()
+        .map(|(i, j, kind, label)| (*i, *j, kind.arrow().to_string(), label.clone()))
+        .collect();
+    let compact_edges: BTreeSet<_> = edges
+        .iter()
+        .map(|(i, j, kind, _)| (*i, *j, *kind))
+        .collect();
     let mut edge_groups: BTreeMap<_, Vec<&str>> = BTreeMap::new();
-    for (i, j, arrow, label) in &edges {
+    for (i, j, arrow, label) in &full_edges {
         edge_groups
             .entry((*i, *j, arrow.as_str()))
             .or_default()
             .push(label);
     }
+    let compact = options.detail == DetailMode::Compact;
     let mut out = String::from("# Mermaid class diagrams\n\n");
-    out.push_str(
-        "Declared types and signatures; unknown types are `unknown`. Receivers are omitted.\n",
-    );
+    if compact {
+        out.push_str("Declared types and member names; signatures and member types are hidden.\n");
+    } else {
+        out.push_str(
+            "Declared types and signatures; unknown types are `unknown`. Receivers are omitted.\n",
+        );
+    }
     out.push_str(
         "Fields are associations, not lifetime ownership. Calls are static heuristic estimates.\n",
     );
     out.push_str("Members and connections within each view are uncapped.\n");
-    out.push_str("Parallel arrows are summarized.\n");
-    out.push_str("Cross-diagram relationships are retained in the complete relationship list.\n\n");
+    if compact {
+        out.push_str("Parallel arrows are grouped by relationship meaning.\n");
+        out.push_str("Connections between diagrams are listed separately.\n\n");
+    } else {
+        out.push_str("Parallel arrows are summarized.\n");
+        out.push_str(
+            "Cross-diagram relationships are retained in the complete relationship list.\n\n",
+        );
+    }
     out.push_str(&format!(
         "Included: {} boxes. Calls without in-scope endpoints: {omitted_calls}.\n\n",
         classes.len()
@@ -345,6 +403,15 @@ pub fn export_mermaid_report(
             out.push_str(&format!("    class {}[\"{label}\"] {{\n", ids[*index]));
             out.push_str(&format!("        <<{}>>\n", safe(&class.kind)));
             for member in *members {
+                if compact {
+                    let name = compact_name(&member.name);
+                    let suffix = if member.kind == "method" { "()" } else { "" };
+                    out.push_str(&format!(
+                        "        {}{name}{suffix}\n",
+                        visibility(&member.visibility)
+                    ));
+                    continue;
+                }
                 let full = member_text(member, &mut aliases);
                 let display = if full.chars().count() > 88 {
                     let key = abbreviation(&plain_member(member), "Signature", 0, &mut signatures);
@@ -361,16 +428,32 @@ pub fn export_mermaid_report(
             }
             out.push_str("    }\n");
         }
-        for ((i, j, arrow), labels) in &edge_groups {
-            if page.iter().any(|(index, _)| index == i) && page.iter().any(|(index, _)| index == j)
-            {
-                let label = if labels.len() == 1 {
-                    labels[0].to_string()
-                } else {
-                    format!("{} relationships (see list)", labels.len())
-                };
-                let label = safe(&abbreviation(&label, "Relation", 65, &mut aliases));
-                out.push_str(&format!("    {} {arrow} {} : {label}\n", ids[*i], ids[*j]));
+        let in_page = |i: &usize, j: &usize| {
+            page.iter().any(|(index, _)| index == i) && page.iter().any(|(index, _)| index == j)
+        };
+        if compact {
+            for (i, j, kind) in &compact_edges {
+                if in_page(i, j) {
+                    out.push_str(&format!(
+                        "    {} {} {} : {}\n",
+                        ids[*i],
+                        kind.arrow(),
+                        ids[*j],
+                        kind.label()
+                    ));
+                }
+            }
+        } else {
+            for ((i, j, arrow), labels) in &edge_groups {
+                if in_page(i, j) {
+                    let label = if labels.len() == 1 {
+                        labels[0].to_string()
+                    } else {
+                        format!("{} relationships (see list)", labels.len())
+                    };
+                    let label = safe(&abbreviation(&label, "Relation", 65, &mut aliases));
+                    out.push_str(&format!("    {} {arrow} {} : {label}\n", ids[*i], ids[*j]));
+                }
             }
         }
         out.push_str("```\n\n");
@@ -385,14 +468,34 @@ pub fn export_mermaid_report(
             class.line
         ));
     }
-    out.push_str("\n## Relationships\n\n");
-    for (i, j, arrow, label) in &edges {
-        out.push_str(&format!(
-            "- {} {arrow} {}: {}\n",
-            ids[*i],
-            ids[*j],
-            markdown_code(label)
-        ));
+    if compact {
+        // pages() keeps each class intact and chunks the ordered classes by this box limit.
+        let cross: Vec<_> = compact_edges
+            .iter()
+            .filter(|(i, j, _)| i / options.max_classes != j / options.max_classes)
+            .collect();
+        if !cross.is_empty() {
+            out.push_str("\n## Cross-diagram relationships\n\n");
+            for (i, j, kind) in cross {
+                out.push_str(&format!(
+                    "- {} {} {}: {}\n",
+                    ids[*i],
+                    kind.arrow(),
+                    ids[*j],
+                    markdown_code(kind.label())
+                ));
+            }
+        }
+    } else {
+        out.push_str("\n## Relationships\n\n");
+        for (i, j, arrow, label) in &full_edges {
+            out.push_str(&format!(
+                "- {} {arrow} {}: {}\n",
+                ids[*i],
+                ids[*j],
+                markdown_code(label)
+            ));
+        }
     }
     if !aliases.is_empty() {
         out.push_str("\n## Type key\n\n");
@@ -418,7 +521,39 @@ pub fn export_mermaid_report(
     })
 }
 
-type DiagramEdge = (usize, usize, String, String);
+type DiagramEdge = (usize, usize, RelationKind, String);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum RelationKind {
+    Inherits,
+    Implements,
+    Field,
+    UsesType,
+    Calls,
+    Constructs,
+}
+
+impl RelationKind {
+    fn arrow(self) -> &'static str {
+        match self {
+            Self::Inherits => "--|>",
+            Self::Implements => "..|>",
+            Self::Field => "-->",
+            Self::UsesType | Self::Calls | Self::Constructs => "..>",
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Inherits => "inherits",
+            Self::Implements => "implements",
+            Self::Field => "field",
+            Self::UsesType => "uses type",
+            Self::Calls => "calls",
+            Self::Constructs => "constructs",
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 struct CallEndpoint<'a> {
@@ -477,24 +612,14 @@ fn type_edges(
             let (resolved, python_binding) = resolve_type(&class.file, &base.name);
             if let Some(j) = resolved.and_then(|i| visible.get(all_classes[i].id.as_str()).copied())
             {
-                let arrow = if base.relation == "implements"
+                let kind = if base.relation == "implements"
                     || (class.kind != "interface" && classes[j].kind == "interface")
                 {
-                    "..|>"
+                    RelationKind::Implements
                 } else {
-                    "--|>"
+                    RelationKind::Inherits
                 };
-                edges.insert((
-                    i,
-                    j,
-                    arrow.to_string(),
-                    if arrow == "..|>" {
-                        "implements"
-                    } else {
-                        "inherits"
-                    }
-                    .into(),
-                ));
+                edges.insert((i, j, kind, kind.label().into()));
             } else if !resolved.is_some_and(|i| hidden_ids.contains(all_classes[i].id.as_str())) {
                 if resolved.is_none()
                     && python_binding
@@ -529,12 +654,12 @@ fn type_edges(
                         resolved.and_then(|i| visible.get(all_classes[i].id.as_str()).copied())
                     {
                         if i != j {
-                            let (arrow, label) = if member.kind == "field" {
-                                ("-->", format!("field {}", member.name))
+                            let (kind, label) = if member.kind == "field" {
+                                (RelationKind::Field, format!("field {}", member.name))
                             } else {
-                                ("..>", format!("type in {}", member.name))
+                                (RelationKind::UsesType, format!("type in {}", member.name))
                             };
-                            edges.insert((i, j, arrow.into(), label));
+                            edges.insert((i, j, kind, label));
                         }
                     } else if resolved.is_none() {
                         if python_binding {
@@ -737,6 +862,11 @@ fn safe(value: &str) -> String {
             }
         })
         .collect()
+}
+
+fn compact_name(value: &str) -> String {
+    // Parentheses in source names must not become Mermaid method syntax.
+    safe(value).replace('(', "#40;").replace(')', "#41;")
 }
 
 fn pages(classes: &[Class], maximum: usize) -> Vec<Vec<(usize, &[Member])>> {

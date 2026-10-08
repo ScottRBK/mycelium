@@ -12,7 +12,7 @@ Run commands from the target repository. Bundled reference links resolve beside 
 regardless of the working directory. No Mycelium checkout is needed.
 
 If uv is unavailable, read [running without uv](references/running-without-uv.md).
-For scope, test selection, or multiple diagram blocks, read
+For detail level, scope, test selection, or multiple diagram blocks, read
 [export options](references/export-options.md).
 
 1. Select the repository and output, defaulting to the current repository and `class-diagram.md`.
@@ -31,7 +31,10 @@ For scope, test selection, or multiple diagram blocks, read
 
 2. Check for `classDiagram` blocks, expected source areas, and warnings. Aim for one diagram;
    recognised tests stay excluded unless requested. Investigate empty output before changing scope.
-   Preserve full names, keys, and relationship lists; change options and regenerate to adjust them.
+   Compact is the default: preserve every member name, source index entry, grouped connection, and
+   individual warning. Use `--detail full` when signatures and detailed relationship labels are
+   needed; it restores the previous detailed output from the same map. Change options and regenerate
+   to adjust detail or scope.
 
 3. Export the same map with identical options and version to a temporary file; compare bytes.
    Deliver the Markdown link, exporter version, diagram count, and material warnings.

@@ -1,6 +1,14 @@
 use mycelium_core::config::{AnalysisConfig, AnalysisResult};
-use mycelium_core::mermaid::{export_mermaid, MermaidOptions};
+use mycelium_core::mermaid::{export_mermaid, DetailMode, MermaidOptions};
 use mycelium_core::pipeline::run_pipeline;
+
+// Preserve the historical detailed-output assertions explicitly.
+fn full_options() -> MermaidOptions {
+    MermaidOptions {
+        detail: DetailMode::Full,
+        ..Default::default()
+    }
+}
 
 fn analyze(files: &[(&str, &str)]) -> AnalysisResult {
     let repo = tempfile::tempdir().unwrap();
@@ -22,7 +30,7 @@ fn analyze(files: &[(&str, &str)]) -> AnalysisResult {
 }
 
 fn export(result: &AnalysisResult) -> String {
-    export_mermaid(result, &MermaidOptions::default()).unwrap()
+    export_mermaid(result, &full_options()).unwrap()
 }
 
 fn box_id<'a>(output: &'a str, file: &str, name: &str) -> &'a str {
@@ -243,10 +251,12 @@ fn filtering_an_imported_target_never_redirects_the_relationship() {
     // Act / Assert.
     for options in [
         MermaidOptions {
+            detail: DetailMode::Full,
             path: "services".into(),
             ..Default::default()
         },
         MermaidOptions {
+            detail: DetailMode::Full,
             test_paths: vec!["models/activity.py".into()],
             ..Default::default()
         },

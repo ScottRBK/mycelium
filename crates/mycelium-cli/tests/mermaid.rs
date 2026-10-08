@@ -1,6 +1,80 @@
 use std::process::Command;
 
 #[test]
+fn cli_csharp_detail_defaults_to_compact_and_full_preserves_the_previous_output() {
+    // Arrange: use a saved map and remove the source before any export.
+    let temp = std::env::temp_dir().join(format!("mycelium-cli-detail-{}", std::process::id()));
+    std::fs::create_dir_all(&temp).unwrap();
+    let source = temp.join("source");
+    std::fs::create_dir_all(&source).unwrap();
+    std::fs::write(
+        source.join("Model.cs"),
+        include_str!("../../../tests/fixtures/compact_csharp/Model.cs"),
+    )
+    .unwrap();
+    let map = temp.join("map.json");
+    let output = temp.join("diagram.md");
+    let binary = env!("CARGO_BIN_EXE_mycelium-map");
+    assert!(Command::new(binary)
+        .arg("analyze")
+        .arg(&source)
+        .args(["--quiet", "-o"])
+        .arg(&map)
+        .status()
+        .unwrap()
+        .success());
+    std::fs::remove_dir_all(source).unwrap();
+
+    // Act / Assert: defaults, explicit compact, and full use the same saved facts.
+    let mut default = String::new();
+    for args in [
+        vec![],
+        vec!["--detail", "compact"],
+        vec!["--detail", "full"],
+    ] {
+        let run = Command::new(binary)
+            .arg("export")
+            .arg(&map)
+            .arg("-o")
+            .arg(&output)
+            .args(&args)
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+        let markdown = std::fs::read_to_string(&output).unwrap();
+        if args.is_empty() {
+            assert!(markdown.contains("        +Current\n"));
+            assert_eq!(markdown.matches("        +Run()\n").count(), 3);
+            default = markdown;
+        } else if args[1] == "compact" {
+            assert_eq!(default, markdown);
+        } else {
+            assert_eq!(
+                markdown,
+                include_str!("../../../tests/fixtures/compact_csharp.full.md")
+            );
+        }
+    }
+    let before = std::fs::read(&output).unwrap();
+    let rejected = Command::new(binary)
+        .arg("export")
+        .arg(&map)
+        .arg("-o")
+        .arg(&output)
+        .args(["--detail", "invalid"])
+        .output()
+        .unwrap();
+    assert!(!rejected.status.success());
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("--detail"));
+    assert_eq!(before, std::fs::read(&output).unwrap());
+    std::fs::remove_dir_all(temp).unwrap();
+}
+
+#[test]
 fn cli_exports_saved_map_and_reports_old_maps_without_creating_output() {
     // Arrange: analyse through the public CLI, then export its saved JSON.
     let temp = std::env::temp_dir().join(format!("mycelium-cli-{}", std::process::id()));
@@ -21,7 +95,7 @@ fn cli_exports_saved_map_and_reports_old_maps_without_creating_output() {
     let exported = Command::new(binary)
         .arg("export")
         .arg(&map)
-        .args(["--format", "mermaid", "-o"])
+        .args(["--format", "mermaid", "--detail", "full", "-o"])
         .arg(&output)
         .output()
         .unwrap();

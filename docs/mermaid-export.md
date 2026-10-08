@@ -6,19 +6,35 @@ Analyse once, then export the saved facts with either the native or Python CLI:
 mycelium-map analyze /path/to/repo -o map.json --quiet
 mycelium-map export map.json --format mermaid -o diagrams.md
 mycelium-map export map.json -o services.md --path src/services --max-classes 6
+# Restore the previous detailed Markdown, including signatures and relationship labels:
+mycelium-map export map.json -o full.md --detail full
 ```
 
 `--path` selects a repository-relative file or directory. It accepts leading `./` and normalizes
 backslashes. A nonempty scope with no declarations reports an error. The default hides declarations
 with supported test evidence. It does not select “important” classes or ask an agent to
-summarise them. Large exports remain large documents:
+summarise them. `--detail compact` is the default on both CLIs and in both public APIs:
 
 - Eight boxes by default, configurable with `--max-classes`.
 - Every box keeps all its members in the same diagram, with no member cap.
 - Every resolved connection between boxes in a diagram is drawn, with no connection cap.
-  Parallel arrows are summarized to avoid overlapping labels.
-- A complete list of resolved relationships, including those crossing diagram boundaries.
-- Type and signature keys for notation that would be too long or unsafe inside Mermaid.
+  Parallel arrows are grouped separately as `calls`, `constructs`, `uses type`, and `field`.
+  Inheritance and implementation keep their arrow styles and labels.
+- Names-only members: methods use `name()`, fields and properties use their names without types.
+  Visibility and declaration stereotypes remain. Overloads retain separate rows even when their
+  displayed names match; existing C/C++ prototype/definition deduplication is unchanged.
+- A source index retains each declaration's path and line. Connections between diagrams appear in
+  a grouped cross-diagram list; connections already drawn are not repeated there.
+- Every warning remains individually available, together with the existing test filtering report.
+
+Compact hides signature details without removing declarations or changing relationship resolution.
+It has no type/signature keys or complete detailed relationship list. Large exports can still be
+large documents. No new analysis is needed to choose a detail level for a saved map.
+
+`--detail full` restores the previous Markdown byte-for-byte for the same saved map and other
+options, including the original parallel-arrow grouping, detailed relationship list, type/signature
+keys, and warnings. The default change affects scripts that consume Markdown; select full explicitly
+to retain that output contract. `--tests include` controls selection independently of detail.
 
 For one diagram, set `--max-classes` to at least the number of included boxes (for example, 1000).
 
@@ -35,7 +51,15 @@ from mycelium import analyze, export_mermaid
 
 result = analyze("/path/to/repo")
 markdown = export_mermaid(result, path="src/services", max_classes=6)
+full = export_mermaid(result, detail="full")
 ```
+
+Python's `detail` argument is keyword-only and accepts `compact` or `full`; other strings raise
+`ValueError`. Rust callers use `MermaidOptions.detail: DetailMode` (`Compact` or `Full`). Exhaustive
+options struct literals must add this field, or use `..Default::default()` for compact defaults.
+Parsing another detail string returns `ExportError::InvalidDetailMode`. `ExportError` already uses
+`#[non_exhaustive]`, so downstream matches already require a wildcard. No saved-map schema changes
+are involved.
 
 ## Test filtering
 
@@ -141,10 +165,10 @@ Default summaries count source occurrences by file/rule, removed calls, and remo
 relationships. Class/impl records and member records each count as occurrences; these are not test
 case counts. `--explain-tests` includes declaration names and locations, with keep overrides.
 Counts follow the selected owner boxes, including members supplied by other source files.
-Unresolved calls remain separate from intentionally removed calls. Include preserves the previous
-Markdown bytes and adds no filtering summary. Colliding legacy declaration IDs are disambiguated
-internally so separate boxes do not collapse into one Mermaid node. CLI notices go to stderr; the
-Python API emits
+Unresolved calls remain separate from intentionally removed calls. Include adds no filtering
+summary; combine it with `--detail full` to preserve the previous detailed include output. Legacy
+IDs are disambiguated internally so separate boxes do not collapse into one Mermaid node. Notices
+go to stderr on the CLI; the Python API emits
 `UserWarning`; Python's warnings-as-errors policy is honoured, with a normal CLI error if enabled.
 Existing extraction warnings remain available even for excluded source. Rust callers needing notices
 can use `export_mermaid_report()`.
@@ -221,13 +245,16 @@ as do TypeScript and JavaScript. Ambiguous names remain unresolved; qualified na
 into unqualified tokens. Python quoted annotations resolve as forward references; `Literal[...]`
 strings and `Annotated` metadata remain values. Rust lifetime names do not hide the adjacent type.
 This is name-based static resolution, not a compiler's import and type checker. External bases and
-out-of-scope bases are reported in warnings. The complete relationship list means all relationships
-resolved by this exporter, not every relationship that might exist at runtime.
+out-of-scope bases are reported in warnings. Full's complete relationship list means all
+relationships resolved by this exporter, not every relationship that might exist at runtime.
 
 Calls use the existing heuristic call edges. Member endpoints match by source file, line, and name;
 arrows connect their owning boxes. Calls targeting class, struct, or record declarations connect
-directly to those boxes, labelled `build() constructs Widget`. This also covers implicit and
-inherited constructors. Calls resolved to explicit constructor members retain their member labels.
+directly to those boxes, labelled `build() constructs Widget` in full and `constructs` in compact.
+This also covers implicit and inherited constructors. Calls resolved to explicit constructor members
+retain their member labels in full. Compact uses `constructs` for saved `Constructor` member targets
+in C#, Java, and VB.NET. Python and JS/TS constructor-member invocations remain `calls`: they can
+initialize an existing object. Their class-declaration construction targets still use `constructs`.
 The original JSON retains confidence, tier, reason, and call-site line.
 
 Calls involving an excluded source occurrence in the selected scope count as removed by test
@@ -248,7 +275,7 @@ Extraction has regression examples for all ten existing languages: Rust, Python,
 TypeScript, JavaScript, Java, Go, C, and C++. Language coverage does not imply compiler
 completeness. Tests include abstract TypeScript classes and constructor properties, C typedefs,
 enum members, C#/Java positional records, Go embedding/generic receivers, and Rust tuple payloads.
-The display focuses on declared field types and parameter/return types. It omits receiver syntax,
+Full detail focuses on declared field types and parameter/return types. It omits receiver syntax,
 default values, generic constraints, and most language-specific method modifiers. Python visibility
 uses underscore conventions. Missing annotations display `unknown`; these are not guessed as `void`.
 
@@ -276,7 +303,9 @@ Source files are read using `git show COMMIT:PATH` into temporary directories. W
 branch movement, untracked files, and local environment files cannot affect their inputs.
 
 ```bash
-cargo build -p mycelium-cli
+cargo build -p mycelium-cli --locked
+# Portable checker regression: real native C++ exports, no external repositories or packages.
+python3 -m unittest tests.test_checkpoint_exports -v
 python3 tests/checkpoints/check_mermaid.py --artifacts /tmp/mycelium-checkpoints
 # Different checkout locations are supported:
 python3 tests/checkpoints/check_mermaid.py --artifacts /tmp/checkpoints \
@@ -284,7 +313,10 @@ python3 tests/checkpoints/check_mermaid.py --artifacts /tmp/checkpoints \
 ```
 
 The runner checks two complete analysis/export passes byte-for-byte, source-fact assertions inside
-the expected owning boxes, then the reviewed output hash. The original slices use `--tests include`
+the expected owning boxes, then the reviewed output hash. Each view also exports compact twice from
+the same saved map and compares boxes, stereotypes, member names/row counts, source index, and
+diagnostic sections with full. Overload rows remain separate. All historical hashes use
+`--detail full`; the original slices also use `--tests include`
 with separate hashes for the complete view. Additional slices at the same commits verify removed
 tests, retained application declarations, and keep exceptions, then check repeatability and their
 own hashes. Additional automatic-only views verify Python fixtures, `TestCase` containers and inline

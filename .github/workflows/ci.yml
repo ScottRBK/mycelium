@@ -31,6 +31,9 @@ jobs:
       - name: Run tests
         run: cargo test --workspace
 
+      - name: Check native checkpoint comparisons
+        run: python3 -m unittest tests.test_checkpoint_exports -v
+
       - name: Clippy
         run: cargo clippy --workspace -- -D warnings
 

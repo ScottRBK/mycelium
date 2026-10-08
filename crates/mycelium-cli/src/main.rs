@@ -36,6 +36,9 @@ enum Commands {
         /// Maximum boxes in each diagram
         #[arg(long, default_value_t = 8)]
         max_classes: usize,
+        /// Member and relationship detail: compact or full
+        #[arg(long, default_value = "compact")]
+        detail: mycelium_core::mermaid::DetailMode,
         /// Hide recognised tests by default; include preserves the complete view
         #[arg(long, default_value = "exclude", value_parser = ["exclude", "include"])]
         tests: String,
@@ -98,6 +101,7 @@ fn main() {
             format: _,
             path,
             max_classes,
+            detail,
             tests,
             test_path,
             keep_path,
@@ -106,6 +110,7 @@ fn main() {
             let options = mycelium_core::mermaid::MermaidOptions {
                 path,
                 max_classes,
+                detail,
                 // Clap validates this same two-value set above.
                 tests: if tests == "include" {
                     mycelium_core::mermaid::TestMode::Include

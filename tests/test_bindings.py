@@ -1,13 +1,51 @@
 """Smoke tests for PyO3 bindings."""
 
-import os
 from pathlib import Path
 
 import pytest
-
-from mycelium._mycelium_rust import analyze, version, PyAnalysisConfig
+from mycelium._mycelium_rust import PyAnalysisConfig, analyze, version
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def test_csharp_compact_default_full_and_invalid_detail(tmp_path):
+    # Arrange: JSON-only export through both public Python boundaries.
+    import json
+
+    from click.testing import CliRunner
+
+    from mycelium import export_mermaid
+    from mycelium.cli import cli
+
+    result = analyze(str(FIXTURES / "compact_csharp"))
+    before = json.dumps(result, sort_keys=True)
+    saved = tmp_path / "map.json"
+    saved.write_text(json.dumps(result))
+    output = tmp_path / "diagram.md"
+
+    # Act / Assert: names remain, including each overload and the interface member.
+    default = export_mermaid(result)
+    assert "        +Current\n" in default
+    assert default.count("        +Run()\n") == 3
+    assert default == export_mermaid(result, detail="compact")
+    full = export_mermaid(result, detail="full")
+    assert full == (FIXTURES / "compact_csharp.full.md").read_text()
+    for args, expected in [([], default), (["--detail", "compact"], default),
+                           (["--detail", "full"], full)]:
+        invocation = CliRunner().invoke(
+            cli, ["export", str(saved), "-o", str(output), *args]
+        )
+        assert invocation.exit_code == 0, invocation.output
+        assert output.read_text() == expected
+    with pytest.raises(ValueError, match="detail must be compact or full"):
+        export_mermaid(result, detail="invalid")
+    rejected = CliRunner().invoke(
+        cli, ["export", str(saved), "-o", str(output), "--detail", "invalid"]
+    )
+    assert rejected.exit_code == 2
+    assert "--detail" in rejected.output
+    assert output.read_text() == full
+    assert before == json.dumps(result, sort_keys=True)
 
 
 def test_version_returns_string():
@@ -57,7 +95,9 @@ def test_progress_callback():
 
 
 def test_init_re_exports():
-    from mycelium import analyze as a, version as v, PyAnalysisConfig as C
+    from mycelium import PyAnalysisConfig as C
+    from mycelium import analyze as a
+    from mycelium import version as v
     assert callable(a)
     assert callable(v)
     assert C is not None
@@ -66,9 +106,11 @@ def test_init_re_exports():
 def test_export_mermaid_and_python_cli(tmp_path):
     # Arrange: exercise the public Python API and saved-map CLI, with real Rust analysis.
     import json
+
     from click.testing import CliRunner
-    from mycelium.cli import cli
+
     from mycelium import export_mermaid
+    from mycelium.cli import cli
 
     source = tmp_path / "source"
     source.mkdir()
@@ -79,8 +121,10 @@ def test_export_mermaid_and_python_cli(tmp_path):
     destination = tmp_path / "diagram.md"
 
     # Act.
-    markdown = export_mermaid(result)
-    invocation = CliRunner().invoke(cli, ["export", str(saved), "-o", str(destination)])
+    markdown = export_mermaid(result, detail="full")
+    invocation = CliRunner().invoke(
+        cli, ["export", str(saved), "-o", str(destination), "--detail", "full"]
+    )
 
     # Assert.
     assert "+name: str" in markdown
@@ -95,7 +139,9 @@ def test_export_mermaid_and_python_cli(tmp_path):
 def test_test_filter_options_match_python_cli_and_validate(tmp_path):
     # Arrange: keep Rust test helpers explicitly, while removing another language's test file.
     import json
+
     from click.testing import CliRunner
+
     from mycelium import export_mermaid
     from mycelium.cli import cli
 
@@ -134,7 +180,9 @@ def test_python_cli_reports_promoted_notices_as_normal_errors(tmp_path):
     # Arrange: Python's user-selected warnings-as-errors policy should not cause a traceback.
     import json
     import warnings
+
     from click.testing import CliRunner
+
     from mycelium.cli import cli
 
     (tmp_path / "app.rs").write_text("struct App {}")

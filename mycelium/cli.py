@@ -7,13 +7,12 @@ from pathlib import Path
 
 import click
 
-from mycelium._mycelium_rust import analyze, export_mermaid, PyAnalysisConfig
+from mycelium._mycelium_rust import PyAnalysisConfig, analyze, export_mermaid
 
 
 @click.group()
 def cli() -> None:
     """Mycelium - Map the hidden network of connections in your codebase."""
-    pass
 
 
 def _run_with_progress(config: PyAnalysisConfig):
@@ -85,11 +84,13 @@ def _run_quiet(config: PyAnalysisConfig):
 @click.option("--format", "output_format", type=click.Choice(["mermaid"]), default="mermaid")
 @click.option("--path", default="", help="Repository-relative file or directory to include")
 @click.option("--max-classes", default=8, type=click.IntRange(min=1))
+@click.option("--detail", type=click.Choice(["compact", "full"]), default="compact",
+              show_default=True, help="Member and relationship detail")
 @click.option("--tests", type=click.Choice(["exclude", "include"]), default="exclude")
 @click.option("--test-path", "test_paths", multiple=True, help="Test file or directory")
 @click.option("--keep-path", "keep_paths", multiple=True, help="Override test selection")
 @click.option("--explain-tests", is_flag=True, help="Include test selection explanations")
-def export_cmd(input_path, output_path, output_format, path, max_classes, tests,
+def export_cmd(input_path, output_path, output_format, path, max_classes, detail, tests,
                test_paths, keep_paths, explain_tests):
     """Export a saved analysis map as Mermaid class diagrams in Markdown."""
     try:
@@ -97,6 +98,7 @@ def export_cmd(input_path, output_path, output_format, path, max_classes, tests,
         markdown = export_mermaid(
             result, path=path, max_classes=max_classes, tests=tests,
             test_paths=list(test_paths), keep_paths=list(keep_paths), explain_tests=explain_tests,
+            detail=detail,
         )
         output_path.write_text(markdown, encoding="utf-8")
     except (OSError, ValueError, TypeError, Warning) as error:

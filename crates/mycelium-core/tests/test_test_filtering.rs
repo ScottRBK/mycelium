@@ -1,6 +1,14 @@
 use mycelium_core::config::{AnalysisConfig, AnalysisResult};
-use mycelium_core::mermaid::{export_mermaid, MermaidOptions};
+use mycelium_core::mermaid::{export_mermaid, DetailMode, MermaidOptions};
 use mycelium_core::pipeline::run_pipeline;
+
+// Preserve the historical detailed-output assertions explicitly.
+fn full_options() -> MermaidOptions {
+    MermaidOptions {
+        detail: DetailMode::Full,
+        ..Default::default()
+    }
+}
 
 fn analyze(files: &[(&str, &str)]) -> AnalysisResult {
     let repo = tempfile::tempdir().unwrap();
@@ -38,6 +46,7 @@ fn explicit_paths_filter_saved_occurrences_and_keep_overrides_win() {
     ]);
     let before = serde_json::to_string(&result).unwrap();
     let options = MermaidOptions {
+        detail: DetailMode::Full,
         test_paths: vec!["./tests/".into()],
         keep_paths: vec!["tests/shared.rs".into()],
         ..Default::default()
@@ -65,6 +74,7 @@ fn rules_validate_files_normalize_order_and_preserve_include_output() {
         ("tests/empty.py", "# no declarations"),
     ]);
     let options = MermaidOptions {
+        detail: DetailMode::Full,
         path: "src".into(),
         test_paths: vec!["./tests//".into(), "tests/empty.py".into(), "tests".into()],
         ..Default::default()
@@ -72,6 +82,7 @@ fn rules_validate_files_normalize_order_and_preserve_include_output() {
     // Act.
     let report = mycelium_core::mermaid::export_mermaid_report(&result, &options).unwrap();
     let normalized = MermaidOptions {
+        detail: DetailMode::Full,
         test_paths: vec!["tests/empty.py".into(), "tests".into()],
         ..options.clone()
     };
@@ -83,16 +94,19 @@ fn rules_validate_files_normalize_order_and_preserve_include_output() {
     assert!(report.notices.iter().any(|n| n.contains("outside")));
     for path in ["missing", "../tests", "/tests", "C:\\tests", "Tests"] {
         let bad = MermaidOptions {
+            detail: DetailMode::Full,
             test_paths: vec![path.into()],
             ..options.clone()
         };
         assert!(export_mermaid(&result, &bad).is_err(), "Accepted {path}");
     }
     let include = MermaidOptions {
+        detail: DetailMode::Full,
         tests: mycelium_core::mermaid::TestMode::Include,
         ..Default::default()
     };
     let with_rules = MermaidOptions {
+        detail: DetailMode::Full,
         test_paths: vec!["tests".into()],
         keep_paths: vec!["src".into()],
         explain_tests: true,
@@ -112,6 +126,7 @@ fn ids_stay_stable_hidden_endpoints_disappear_and_empty_scope_is_valid() {
         ("z_app.py", "class App:\n    fake: Fake\n"),
     ]);
     let include = MermaidOptions {
+        detail: DetailMode::Full,
         tests: mycelium_core::mermaid::TestMode::Include,
         ..Default::default()
     };
@@ -120,6 +135,7 @@ fn ids_stay_stable_hidden_endpoints_disappear_and_empty_scope_is_valid() {
     let filtered = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             test_paths: vec!["a_test.py".into()],
             ..Default::default()
         },
@@ -128,6 +144,7 @@ fn ids_stay_stable_hidden_endpoints_disappear_and_empty_scope_is_valid() {
     let empty = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             test_paths: vec![".".into()],
             ..Default::default()
         },
@@ -165,10 +182,11 @@ macro_rules! test { () => {} }
     )]);
     let before = serde_json::to_string(&result).unwrap();
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     let include = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             tests: mycelium_core::mermaid::TestMode::Include,
             ..Default::default()
         },
@@ -228,10 +246,11 @@ fn go_test_files_remove_helpers_and_receiver_methods_without_name_guessing() {
         ),
     ]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     let kept = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             keep_paths: vec!["app_test.go".into()],
             ..Default::default()
         },
@@ -268,7 +287,7 @@ fn rust_inner_attributes_work_but_recovery_and_imported_attributes_stay_visible(
         ("external/child.rs", "struct ExternalKept {}"),
     ]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     for name in [
         "App",
@@ -328,6 +347,7 @@ fn explicit_paths_cover_all_ten_languages_without_inferring_test_names() {
         let output = export_mermaid(
             &result,
             &MermaidOptions {
+                detail: DetailMode::Full,
                 test_paths: vec!["tests".into()],
                 ..Default::default()
             },
@@ -355,10 +375,11 @@ fn legacy_and_unknown_detector_maps_use_explicit_paths_without_guessing() {
         }
         let legacy: AnalysisResult = serde_json::from_value(saved).unwrap();
         // Act.
-        let output = export_mermaid(&legacy, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&legacy, &full_options()).unwrap();
         let excluded = export_mermaid(
             &legacy,
             &MermaidOptions {
+                detail: DetailMode::Full,
                 test_paths: vec!["app.rs".into()],
                 ..Default::default()
             },
@@ -383,7 +404,7 @@ fn filtering_preserves_ambiguity_and_removes_edges_to_hidden_members() {
         ),
     ]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(output.contains("Ambiguous type: Service uses Item"));
     assert!(!output.contains(" --> "));
@@ -407,7 +428,7 @@ impl Shared for Service { fn shared(&self) {} }
 "#,
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert: the retained Shared relationship must not inherit the removed duplicate's role.
     assert!(output.contains("c0001 ..|> c0002"), "{output}");
     assert!(!output.contains("c0001 ..|> c0000"), "{output}");
@@ -434,6 +455,7 @@ fn missing_occurrence_locations_stay_visible_with_a_diagnostic() {
     let output = export_mermaid(
         &saved,
         &MermaidOptions {
+            detail: DetailMode::Full,
             test_paths: vec!["tests".into()],
             ..Default::default()
         },
@@ -455,6 +477,7 @@ fn explanations_and_saved_order_are_deterministic() {
         ("tests/helper.rs", "struct Helper {}"),
     ]);
     let options = MermaidOptions {
+        detail: DetailMode::Full,
         test_paths: vec!["tests".into(), "src".into()],
         keep_paths: vec!["./src/".into()],
         explain_tests: true,
@@ -474,6 +497,7 @@ fn explanations_and_saved_order_are_deterministic() {
     let repeated = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             test_paths: vec!["./src/".into(), "tests".into(), "src".into()],
             ..options
         },
@@ -499,7 +523,7 @@ fn retained() {}
 "#,
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(!output.contains("+0: Item"), "{output}");
     assert!(output.contains("+1: u32"));
@@ -515,6 +539,7 @@ fn include_mode_preserves_empty_maps_without_filter_messages() {
     let output = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             tests: mycelium_core::mermaid::TestMode::Include,
             ..Default::default()
         },
@@ -523,7 +548,7 @@ fn include_mode_preserves_empty_maps_without_filter_messages() {
     // Assert.
     assert!(!output.contains("after test filtering"));
     assert!(!output.contains("Test filtering"));
-    let default = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let default = export_mermaid(&result, &full_options()).unwrap();
     assert!(!default.contains("No declarations remain after test filtering"));
 }
 
@@ -541,12 +566,13 @@ fn same_line_types_in_distinct_rust_modules_keep_distinct_box_ids() {
     let full = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             tests: mycelium_core::mermaid::TestMode::Include,
             ..Default::default()
         },
     )
     .unwrap();
-    let filtered = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let filtered = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(full.contains("class c0000[\"Item\"]"), "{full}");
     assert!(full.contains("class c0001[\"Item\"]"), "{full}");
@@ -571,13 +597,13 @@ fn rust_only_reports_bindings_that_actually_prevent_detection_within_scope() {
     let scoped = mycelium_core::mermaid::export_mermaid_report(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             path: "src".into(),
             ..Default::default()
         },
     )
     .unwrap();
-    let full =
-        mycelium_core::mermaid::export_mermaid_report(&result, &MermaidOptions::default()).unwrap();
+    let full = mycelium_core::mermaid::export_mermaid_report(&result, &full_options()).unwrap();
     // Assert.
     assert!(scoped.notices.is_empty(), "{:?}", scoped.notices);
     assert!(!scoped.markdown.contains("uncertain"));
@@ -603,6 +629,7 @@ fn retained_impl_keeps_an_owner_shell_and_cross_file_filter_counts_follow_the_ow
     let kept = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             test_paths: vec!["tests".into()],
             keep_paths: vec!["tests/support.rs".into()],
             ..Default::default()
@@ -612,6 +639,7 @@ fn retained_impl_keeps_an_owner_shell_and_cross_file_filter_counts_follow_the_ow
     let scoped = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             path: "src".into(),
             test_paths: vec!["tests".into()],
             ..Default::default()
@@ -641,8 +669,8 @@ fn rust_variants_filter_and_cpp_prototypes_do_not_inflate_removed_relationships(
         ("model.cpp", "Item* App::run(Item* b) { return b; }"),
     ]);
     // Act.
-    let rust = export_mermaid(&rust, &MermaidOptions::default()).unwrap();
-    let cpp = export_mermaid(&cpp, &MermaidOptions::default()).unwrap();
+    let rust = export_mermaid(&rust, &full_options()).unwrap();
+    let cpp = export_mermaid(&cpp, &full_options()).unwrap();
     // Assert.
     assert!(rust.contains("Normal:"));
     assert!(!rust.contains("Scratch:"));

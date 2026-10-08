@@ -1,6 +1,14 @@
 use mycelium_core::config::{AnalysisConfig, AnalysisResult};
-use mycelium_core::mermaid::{export_mermaid, MermaidOptions};
+use mycelium_core::mermaid::{export_mermaid, DetailMode, MermaidOptions};
 use mycelium_core::pipeline::run_pipeline;
+
+// Preserve the historical detailed-output assertions explicitly.
+fn full_options() -> MermaidOptions {
+    MermaidOptions {
+        detail: DetailMode::Full,
+        ..Default::default()
+    }
+}
 
 fn analyze(files: &[(&str, &str)]) -> AnalysisResult {
     let repo = tempfile::tempdir().unwrap();
@@ -50,10 +58,11 @@ def application(): pass
 "#,
     )]);
     // Act: the checkout has already been deleted by analyze().
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     let include = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             tests: mycelium_core::mermaid::TestMode::Include,
             ..Default::default()
         },
@@ -94,7 +103,7 @@ fn python_uncertain_framework_bindings_and_local_modules_stay_visible() {
         );
         let result = analyze(&[("app.py", &source)]);
         // Act.
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         // Assert.
         assert!(output.contains("work()"), "Hidden by {shadow}: {output}");
     }
@@ -106,7 +115,7 @@ fn python_uncertain_framework_bindings_and_local_modules_stay_visible() {
                 "import unittest\nclass Kept(unittest.TestCase):\n    def work(self): pass\n",
             ),
         ]);
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         assert!(
             output.contains("work()"),
             "Local {module} misidentified: {output}"
@@ -116,7 +125,7 @@ fn python_uncertain_framework_bindings_and_local_modules_stay_visible() {
         "broken.py",
         "import unittest\nclass Kept(unittest.TestCase):\n    def work(self): pass\n! invalid\n",
     )]);
-    let output = export_mermaid(&malformed, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&malformed, &full_options()).unwrap();
     assert!(output.contains("work()"));
     assert!(output.contains("syntax-derived test detection disabled"));
 }
@@ -151,7 +160,7 @@ partial class Parts { void app_part() {} }
 "#,
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     for hidden in [
         "helper()",
@@ -214,7 +223,7 @@ fn csharp_bindings_check_other_files_namespace_scopes_and_alias_conflicts() {
     for (source, conflict) in cases {
         let result = analyze(&[("a.cs", source), ("z.cs", conflict)]);
         // Act.
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         // Assert.
         assert!(
             output.contains("kept()"),
@@ -231,7 +240,7 @@ fn csharp_bindings_check_other_files_namespace_scopes_and_alias_conflicts() {
             "namespace B; class FactAttribute : System.Attribute {}",
         ),
     ]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(
         !output.contains("check()"),
         "Unrelated namespace blocked detection: {output}"
@@ -268,7 +277,7 @@ End Class
 "#,
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     for hidden in ["Setup()", "FactCase()", "MethodCase()", "TheoryCase()"] {
         assert!(!output.contains(hidden), "Leaked {hidden}: {output}");
@@ -281,6 +290,7 @@ End Class
     let kept = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             keep_paths: vec!["Mixed.vb".into()],
             ..Default::default()
         },
@@ -290,6 +300,7 @@ End Class
     assert!(export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             keep_paths: vec!["mixed.vb".into()],
             ..Default::default()
         }
@@ -322,7 +333,7 @@ class Mixed {
 "#,
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     for hidden in [
         "check()",
@@ -352,7 +363,7 @@ class Mixed {
         ),
     ] {
         let result = analyze(&[("Mixed.java", source), ("Other.java", conflict)]);
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         assert!(
             output.contains("kept()"),
             "False positive for {source}: {output}"
@@ -383,7 +394,7 @@ class Application { run() {} }
 "#;
         let result = analyze(&[(&format!("mixed.{extension}"), source)]);
         // Act.
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         // Assert.
         for hidden in [
             "Fake",
@@ -420,7 +431,7 @@ class Application {}
 "#,
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(!output.contains("Fake"), "{output}");
     assert!(!output.contains("helper()"), "{output}");
@@ -438,7 +449,7 @@ class Application {}
     ] {
         let source = format!("{declaration}\ncheck('case', () => {{ class Kept {{}} }});");
         let result = analyze(&[("lookalike.js", &source)]);
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         assert!(
             output.contains("Kept"),
             "False positive for {declaration}: {output}"
@@ -459,7 +470,7 @@ fn old_detector_versions_keep_saved_rules_without_claiming_framework_detection()
         .unwrap()
         .version = 1;
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(!output.contains("check()"));
     assert!(output.contains("app()"));
@@ -487,7 +498,7 @@ fn old_detector_versions_keep_saved_rules_without_claiming_framework_detection()
         .as_mut()
         .unwrap()
         .version = 1;
-    assert!(export_mermaid(&old, &MermaidOptions::default())
+    assert!(export_mermaid(&old, &full_options())
         .unwrap()
         .contains("support()"));
 }
@@ -500,7 +511,7 @@ fn dotnet_global_aliases_and_vb_local_markers_prevent_false_positives() {
         ("app.cs", "class Mixed { [Xunit.Fact] void kept() {} }"),
     ]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(output.contains("kept()"), "{output}");
     let result = analyze(&[
@@ -514,7 +525,7 @@ fn dotnet_global_aliases_and_vb_local_markers_prevent_false_positives() {
             "Namespace App\nPublic Class fAcTaTtRiBuTe\nEnd Class\nEnd Namespace\n",
         ),
     ]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(output.contains("Kept()"), "{output}");
 }
 
@@ -527,7 +538,7 @@ fn node_default_import_is_a_test_binding_but_type_only_imports_are_not() {
             "import check from 'node:test'; check('case', () => { class Fake {} });",
         )]);
         // Act.
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         // Assert.
         assert!(!output.contains("Fake"), "{output}");
     }
@@ -536,7 +547,7 @@ fn node_default_import_is_a_test_binding_but_type_only_imports_are_not() {
         "import {type test} from 'node:test'; test('case', () => { class Kept {} });",
     ] {
         let result = analyze(&[("typeonly.ts", source)]);
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         assert!(output.contains("Kept"), "{output}");
     }
 }
@@ -555,7 +566,7 @@ fn recovered_conflicting_files_still_prevent_framework_name_assumptions() {
         ),
     ]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(output.contains("kept()"), "{output}");
 }
@@ -570,7 +581,7 @@ fn pattern_captures_and_typescript_value_declarations_can_shadow_frameworks() {
         class Kept(ut.TestCase):\n    def work(self): pass\n",
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(output.contains("work()"), "{output}");
     let result = analyze(&[(
@@ -578,7 +589,7 @@ fn pattern_captures_and_typescript_value_declarations_can_shadow_frameworks() {
         "import {test} from 'node:test';\n\
         { enum test { Value }; test('case', () => { class Kept {} }); }",
     )]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(output.contains("Kept"), "{output}");
 }
 
@@ -622,9 +633,9 @@ fn framework_selection_is_saved_repeatable_and_independent_of_record_order() {
         .diagnostics
         .reverse();
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
-    let reordered = export_mermaid(&shuffled, &MermaidOptions::default()).unwrap();
-    let repeated = export_mermaid(&again, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
+    let reordered = export_mermaid(&shuffled, &full_options()).unwrap();
+    let repeated = export_mermaid(&again, &full_options()).unwrap();
     // Assert.
     assert_eq!(output, reordered);
     assert_eq!(output, repeated);
@@ -651,7 +662,7 @@ fn dotnet_relative_import_targets_are_checked_before_accepting_framework_identit
             ),
         ]);
         // Act.
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         // Assert.
         assert!(output.contains("kept()"), "{output}");
     }
@@ -660,7 +671,7 @@ fn dotnet_relative_import_targets_are_checked_before_accepting_framework_identit
         "using Xunit = Other;\n\
         class C { [global::Xunit.Fact] void hidden() {} }\nclass Other {}",
     )]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(
         !output.contains("hidden()"),
         "Global qualification must bypass aliases: {output}"
@@ -676,14 +687,14 @@ fn imported_require_and_commented_import_modifiers_remain_conservative() {
         const {test} = require('node:test'); test('case', () => { class Kept {} });",
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(output.contains("Kept"), "{output}");
     let result = analyze(&[
         ("global.cs", "global/* comment */using Xunit = Local;"),
         ("app.cs", "class Mixed { [Xunit.Fact] void kept() {} }"),
     ]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(output.contains("kept()"), "{output}");
     for import in [
         "import/*comment*/type {test}",
@@ -694,7 +705,7 @@ fn imported_require_and_commented_import_modifiers_remain_conservative() {
             test('case', () => {{ class Kept {{}} }});"
         );
         let result = analyze(&[("typeonly.ts", &source)]);
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         assert!(output.contains("Kept"), "{output}");
     }
 }
@@ -713,7 +724,7 @@ fn java_direct_annotations_work_alongside_static_assertion_imports() {
         );
         let result = analyze(&[("Mixed.java", &source)]);
         // Act.
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         // Assert.
         assert!(!output.contains("hidden()"), "{output}");
         assert!(output.contains("application()"));
@@ -730,7 +741,7 @@ fn vb_nested_types_and_global_namespace_lookalikes_do_not_hide_application_code(
         <TestFixture>\nPublic Class Tests\nEnd Class\nEnd Class\n",
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(output.contains("Run()"), "{output}");
     assert!(
@@ -753,7 +764,7 @@ fn vb_nested_types_and_global_namespace_lookalikes_do_not_hide_application_code(
             <Fact>\nPublic Sub Kept()\nEnd Sub\nEnd Class\nEnd Namespace\n"
         );
         let result = analyze(&[("mixed.vb", &source), ("local.vb", local)]);
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         assert!(output.contains("Kept()"), "{local}: {output}");
     }
 }
@@ -767,7 +778,7 @@ fn vb_option_blank_lines_and_commented_js_arguments_are_supported() {
         Public Class Mixed\n<Fact>\nPublic Sub Hidden()\nEnd Sub\nEnd Class\n",
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(!output.contains("Hidden()"), "{output}");
     assert!(!output.contains("malformed syntax"), "{output}");
@@ -776,7 +787,7 @@ fn vb_option_blank_lines_and_commented_js_arguments_are_supported() {
         "import {test} from 'node:test';\n\
         test('case', /* comment */ () => { class Hidden {} });",
     )]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(!output.contains("Hidden"), "{output}");
 }
 
@@ -790,7 +801,7 @@ fn dotnet_nested_interfaces_and_attribute_targets_remain_independent() {
         Public Interface Contract\nEnd Interface\nEnd Class\n",
     )]);
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(output.contains("Contract"), "{output}");
     assert!(
@@ -802,7 +813,7 @@ fn dotnet_nested_interfaces_and_attribute_targets_remain_independent() {
         "namespace App; using Xunit;\n\
         class Mixed { [return: Fact] object Kept() => null; [Fact] void Hidden() {} }",
     )]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(output.contains("Kept()"), "{output}");
     assert!(!output.contains("Hidden()"), "{output}");
 }
@@ -819,7 +830,7 @@ fn inherited_and_static_member_type_bindings_are_left_for_explicit_paths() {
     ] {
         let result = analyze(&[("bindings.cs", source)]);
         // Act.
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         // Assert.
         assert!(output.contains("Kept()"), "{output}");
         assert!(!output.contains("Hidden()"), "{output}");
@@ -830,7 +841,7 @@ fn inherited_and_static_member_type_bindings_are_left_for_explicit_paths() {
         class Base { @interface Test {} }\n\
         class Mixed extends Base { @Test void Kept() {} }",
     )]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(output.contains("Kept()"), "{output}");
     let result = analyze(&[
         (
@@ -843,7 +854,7 @@ fn inherited_and_static_member_type_bindings_are_left_for_explicit_paths() {
             "using Xunit; class Mixed { [Fact] void Kept() {} }",
         ),
     ]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(output.contains("Kept()"), "{output}");
 }
 
@@ -859,10 +870,11 @@ fn vb_nested_member_ownership_and_inherited_lookalikes_survive_export() {
         Public Enum State\nReady\nEnd Enum\nEnd Class\n",
     )]);
     // Act.
-    let excluded = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let excluded = export_mermaid(&result, &full_options()).unwrap();
     let included = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             tests: mycelium_core::mermaid::TestMode::Include,
             ..Default::default()
         },
@@ -913,7 +925,7 @@ fn vb_nested_member_ownership_and_inherited_lookalikes_survive_export() {
         End Class\nEnd Class\nPublic Class Mixed\nInherits Base\n\
         <Fact>\nPublic Sub Kept()\nEnd Sub\nEnd Class\n",
     )]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(output.contains("Kept()"), "{output}");
     let member = result
         .class_diagram

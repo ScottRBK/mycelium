@@ -6,11 +6,11 @@ Requires uv on PATH. CI and release jobs pass the same wheel to every Python ver
 
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 
 def main():
@@ -24,8 +24,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix="mycelium-wheel-") as directory:
         work = Path(directory)
         shutil.copy2(tests / "test_bindings.py", work / "test_bindings.py")
-        for fixture in ("csharp_simple", "python_simple"):
+        for fixture in ("csharp_simple", "python_simple", "compact_csharp"):
             shutil.copytree(tests / "fixtures" / fixture, work / "fixtures" / fixture)
+        shutil.copy2(tests / "fixtures" / "compact_csharp.full.md", work / "fixtures")
         env = os.environ.copy()
         for key in ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV"):
             env.pop(key, None)

@@ -1,6 +1,14 @@
 use mycelium_core::config::AnalysisConfig;
-use mycelium_core::mermaid::{export_mermaid, MermaidOptions};
+use mycelium_core::mermaid::{export_mermaid, DetailMode, MermaidOptions};
 use mycelium_core::pipeline::run_pipeline;
+
+// Preserve the historical detailed-output assertions explicitly.
+fn full_options() -> MermaidOptions {
+    MermaidOptions {
+        detail: DetailMode::Full,
+        ..Default::default()
+    }
+}
 
 #[test]
 fn source_exports_typed_classes_trait_methods_and_calls() {
@@ -29,7 +37,7 @@ pub fn launch(service: Service) -> String { service.run(1) }
 
     // Act: exercise the same analysis and export boundary used by the CLI.
     let result = run_pipeline(&config, None).unwrap();
-    let markdown = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let markdown = export_mermaid(&result, &full_options()).unwrap();
 
     // Assert: check meaning, not merely that the exporter can snapshot itself.
     for expected in [
@@ -56,7 +64,7 @@ pub fn launch(service: Service) -> String { service.run(1) }
     let repeated = run_pipeline(&config, None).unwrap();
     assert_eq!(
         markdown,
-        export_mermaid(&repeated, &MermaidOptions::default()).unwrap()
+        export_mermaid(&repeated, &full_options()).unwrap()
     );
 }
 
@@ -71,7 +79,7 @@ fn export_source(filename: &str, source: &str) -> String {
         None,
     )
     .unwrap();
-    export_mermaid(&result, &MermaidOptions::default()).unwrap()
+    export_mermaid(&result, &full_options()).unwrap()
 }
 
 #[test]
@@ -348,6 +356,7 @@ fn all_connections_between_visible_boxes_are_drawn() {
     let output = export_mermaid(
         &restored,
         &MermaidOptions {
+            detail: DetailMode::Full,
             max_classes: 100,
             ..Default::default()
         },
@@ -409,6 +418,7 @@ fn large_classes_keep_all_members_together_and_respect_the_box_limit() {
     // Act: the box limit alone controls whether these two types share a diagram.
     for (max_classes, expected_diagrams) in [(2, 1), (1, 2)] {
         let options = MermaidOptions {
+            detail: DetailMode::Full,
             max_classes,
             ..Default::default()
         };
@@ -517,7 +527,7 @@ fn helper() {}
     )
     .unwrap();
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     // Assert.
     assert!(output.contains("run() calls helper()"), "{output}");
 }
@@ -569,10 +579,11 @@ fn scoping_and_ambiguous_type_names_never_select_an_arbitrary_owner() {
     )
     .unwrap();
     // Act.
-    let all = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let all = export_mermaid(&result, &full_options()).unwrap();
     let scoped = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             path: "c".into(),
             ..Default::default()
         },
@@ -603,17 +614,14 @@ fn export_is_order_independent_and_does_not_allow_source_text_to_add_statements(
         None,
     )
     .unwrap();
-    let first = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let first = export_mermaid(&result, &full_options()).unwrap();
     result.class_diagram.as_mut().unwrap().classes.reverse();
     result.symbols.reverse();
     result.calls.reverse();
     // Act / Assert.
-    assert_eq!(
-        first,
-        export_mermaid(&result, &MermaidOptions::default()).unwrap()
-    );
+    assert_eq!(first, export_mermaid(&result, &full_options()).unwrap());
     result.class_diagram.as_mut().unwrap().classes[0].kind = "class>>\nclick exploit".into();
-    let escaped = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let escaped = export_mermaid(&result, &full_options()).unwrap();
     assert!(!escaped.contains("\nclick exploit"));
 }
 
@@ -671,7 +679,7 @@ fn identical_sources_export_identically_regardless_of_file_creation_order() {
             None,
         )
         .unwrap();
-        outputs.push(export_mermaid(&result, &MermaidOptions::default()).unwrap());
+        outputs.push(export_mermaid(&result, &full_options()).unwrap());
     }
     // Assert: even ambiguous heuristic calls need a repeatable selection.
     assert_eq!(outputs[0], outputs[1]);
@@ -810,7 +818,7 @@ fn type_references_do_not_cross_language_boundaries() {
         None,
     )
     .unwrap();
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
     assert!(!output.contains(" --> "), "{output}");
     let output = export_source(
         "client.ts",
@@ -966,6 +974,7 @@ fn scoped_exports_normalize_relative_paths_and_report_no_matches() {
         let output = export_mermaid(
             &result,
             &MermaidOptions {
+                detail: DetailMode::Full,
                 path: path.into(),
                 ..Default::default()
             },
@@ -976,6 +985,7 @@ fn scoped_exports_normalize_relative_paths_and_report_no_matches() {
     let error = export_mermaid(
         &result,
         &MermaidOptions {
+            detail: DetailMode::Full,
             path: "missing".into(),
             ..Default::default()
         },
@@ -1116,7 +1126,7 @@ fn java_basename_fallback_uses_a_stable_path_order_across_fresh_analyses() {
     // Every run builds a new randomized HashSet. Its order must not choose the import target.
     for _ in 0..16 {
         let result = run_pipeline(&config, None).unwrap();
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
         assert!(
             output.contains("c0000 ..> c0001 : run() calls ping()"),
             "{output}"

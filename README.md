@@ -47,8 +47,10 @@ Two skills use the PyPI package through `uvx` and work in any repository:
 
 - [mycelium-mermaid](skills/mycelium-mermaid/SKILL.md) generates a Mermaid class diagram as Markdown.
 - [mycelium-architecture](skills/mycelium-architecture/SKILL.md) uses that generator to write
-  `docs/assets/mycelium_class_diagram.md` and add an `AGENTS.md` instruction to read it before code
-  changes or architectural work.
+  a detailed map at `docs/assets/mycelium_class_diagram.md`, then builds a reviewable
+  `architecture.md` overview of at most 500 lines, with no column-width limit. It updates
+  `AGENTS.md` to read the overview before code changes and consult the detailed map selectively,
+  not load it all at once.
 
 Install both with the [Skills CLI](https://github.com/vercel-labs/skills):
 
@@ -64,7 +66,9 @@ npx skills add ScottRBK/mycelium --skill mycelium-mermaid
 
 Add `--global` to make the skills available across projects. Bundled references travel with the
 generator skill; neither skill requires a Mycelium checkout. Ask your agent to use
-`mycelium-mermaid` for a diagram, or `mycelium-architecture` to generate it and update `AGENTS.md`.
+`mycelium-mermaid` for a diagram, or `mycelium-architecture` to build the overview, detailed map,
+and `AGENTS.md` guidance. After code changes, refresh the map and check the overview for needed
+updates; retain reviewed explanations that remain accurate.
 
 ## Usage
 
@@ -97,11 +101,17 @@ print(result["stats"])
 mycelium-map analyze ./my-project -o map.json --quiet
 mycelium-map export map.json -o diagrams.md
 mycelium-map export map.json -o services.md --path src/services --max-classes 6
+mycelium-map export map.json -o full.md --detail full
 ```
 
-Exports typed fields, parameter/return signatures, declared type relationships, and labelled calls
-as deterministic Mermaid Markdown. Large views split into bounded diagrams with a complete list
-of resolved relationships. Both CLIs and `mycelium.export_mermaid(result)` share the Rust exporter.
+Exports deterministic Mermaid Markdown. Compact is now the default: every member name and visibility
+is retained, methods use `name()`, and arrows group calls, construction, fields, and type
+dependencies separately. Large views split into bounded diagrams with a list of connections
+between diagrams.
+Source locations and individual warnings remain. `--detail full` restores the previous Markdown
+byte-for-byte, including typed signatures, keys, and detailed relationships, from the same saved
+map. Both CLIs and `mycelium.export_mermaid(result, detail="compact")` share the Rust exporter;
+Python also accepts `detail="full"`. Detail changes display only and requires no reanalysis.
 Exports hide recognised Rust/Go tests and supported Python, .NET, Java and JS/TS framework
 declarations
 by default. Use `--test-path tests` for explicit test folders (including C/C++), `--keep-path` for

@@ -4,13 +4,64 @@ import argparse
 import hashlib
 import json
 import re
-from pathlib import Path
 import subprocess
 import tempfile
+from pathlib import Path
 
 
 def run(*args):
     return subprocess.check_output(args, stderr=subprocess.PIPE)
+
+
+def check_compact(binary, analysis, full, options):
+    """Check the default view twice from the same saved facts as the historical full view."""
+    destination = analysis.with_suffix(".compact.md")
+    outputs = []
+    for _ in range(2):
+        run(str(binary), "export", str(analysis), "-o", str(destination), *options)
+        outputs.append(destination.read_bytes())
+    assert outputs[0] == outputs[1], "Compact export is not repeatable"
+    compact = outputs[0].decode()
+    full = full.decode()
+
+    def compact_row(row):
+        if row.startswith("<<"):
+            return row
+        # Types containing parentheses use aliases. The final group is the method's arguments;
+        # any earlier parentheses belong to its name (for example, C++ operator()).
+        method = re.fullmatch(r"(.*)\([^()]*\)(?: .*)?", row)
+        name = method.group(1) if method else row.rsplit(": ", 1)[0]
+        name = name.replace("(", "#40;").replace(")", "#41;")
+        return name + ("()" if method else "")
+
+    def boxes(markdown, names_only=False):
+        found = []
+        pattern = r'^    class (c\d+)\["([^"]+)"\] \{(.*?)^    }'
+        for box_id, label, body in re.findall(pattern, markdown, re.MULTILINE | re.DOTALL):
+            rows = [line.strip() for line in body.splitlines() if line.strip()]
+            if names_only:
+                # Full retains the member name even when signature values use a key.
+                rows = [compact_row(row) for row in rows]
+            found.append((box_id, label, rows))
+        return found
+
+    # Lists retain order and duplicate overload rows, unlike name sets.
+    assert boxes(compact) == boxes(full, names_only=True), (
+        "Compact changed boxes, stereotypes, visibility, member names or row counts"
+    )
+    for heading in ("Source index", "Test filtering", "Extraction warnings"):
+        pattern = rf"^## {heading}\n(.*?)(?=^## |\Z)"
+        sections = []
+        for markdown in (full, compact):
+            match = re.search(pattern, markdown, re.MULTILINE | re.DOTALL)
+            sections.append(match.group(1).strip() if match else "")
+        assert sections[0] == sections[1], f"Compact changed {heading}"
+    assert re.findall(r"^Included:.*", full, re.MULTILINE) == re.findall(
+        r"^Included:.*", compact, re.MULTILINE
+    ), "Compact changed included/omitted endpoint counts"
+    for heading in ("Relationships", "Type key", "Signature key"):
+        assert f"## {heading}\n" not in compact, f"Compact retained full-only {heading}"
+    return outputs[0]
 
 
 def main():
@@ -53,8 +104,8 @@ def main():
                     analysis = root / f"map-{repeat}.json"
                     markdown = root / f"diagram-{repeat}.md"
                     run(str(binary), "analyze", str(source), "--quiet", "-o", str(analysis))
-                    run(str(binary), "export", str(analysis), "--tests", "include",
-                        "-o", str(markdown))
+                    run(str(binary), "export", str(analysis), "--detail", "full",
+                        "--tests", "include", "-o", str(markdown))
                     outputs.append(markdown.read_bytes())
                 assert outputs[0] == outputs[1], "Repeated analysis/export differs"
                 output = outputs[0]
@@ -86,6 +137,8 @@ def main():
                         assert member in boxes, f"Missing {owner} member: {member}"
                 digest = hashlib.sha256(output).hexdigest()
                 assert digest == checkpoint["sha256"], f"Output changed: SHA256 {digest}"
+                compact = check_compact(binary, analysis, output, ["--tests", "include"])
+                (args.artifacts / f"{name}-compact.md").write_bytes(compact)
                 filtering = checkpoint.get("filtering")
                 if filtering:
                     for filename in filtering["files"]:
@@ -98,14 +151,14 @@ def main():
                     filtered_outputs = []
                     for repeat in range(2):
                         run(str(binary), "analyze", str(source), "--quiet", "-o", str(analysis))
-                        run(str(binary), "export", str(analysis), "-o", str(markdown),
-                            *filtering["options"])
+                        run(str(binary), "export", str(analysis), "--detail", "full",
+                            "-o", str(markdown), *filtering["options"])
                         filtered_outputs.append(markdown.read_bytes())
                     assert filtered_outputs[0] == filtered_outputs[1], "Filtering is not repeatable"
                     filtered = filtered_outputs[0]
                     (args.artifacts / f"{name}-filtered.md").write_bytes(filtered)
-                    run(str(binary), "export", str(analysis), "--tests", "include",
-                        "-o", str(markdown))
+                    run(str(binary), "export", str(analysis), "--detail", "full",
+                        "--tests", "include", "-o", str(markdown))
                     included = markdown.read_bytes()
                     (args.artifacts / f"{name}-filtering-include.md").write_bytes(included)
                     for expected in filtering["contains"]:
@@ -119,12 +172,15 @@ def main():
                     assert filtered_hash == filtering["sha256"], (
                         f"Filtered output changed: SHA256 {filtered_hash}"
                     )
+                    compact = check_compact(binary, analysis, filtered, filtering["options"])
+                    (args.artifacts / f"{name}-filtered-compact.md").write_bytes(compact)
                     automatic = filtering.get("automatic")
                     if automatic:
                         automatic_outputs = []
                         for repeat in range(2):
                             run(str(binary), "analyze", str(source), "--quiet", "-o", str(analysis))
-                            run(str(binary), "export", str(analysis), "-o", str(markdown))
+                            run(str(binary), "export", str(analysis), "--detail", "full",
+                                "-o", str(markdown))
                             automatic_outputs.append(markdown.read_bytes())
                         assert automatic_outputs[0] == automatic_outputs[1], (
                             "Framework detection is not repeatable"
@@ -144,6 +200,8 @@ def main():
                         assert automatic_hash == automatic["sha256"], (
                             f"Automatic output changed: SHA256 {automatic_hash}"
                         )
+                        compact = check_compact(binary, analysis, automatic_output, [])
+                        (args.artifacts / f"{name}-automatic-compact.md").write_bytes(compact)
             print(f"PASS {name} @ {commit[:12]}")
         except (AssertionError, KeyError, OSError, subprocess.CalledProcessError) as error:
             failures.append(name)

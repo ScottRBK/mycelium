@@ -1,6 +1,14 @@
 use mycelium_core::config::{AnalysisConfig, AnalysisResult};
-use mycelium_core::mermaid::{export_mermaid, MermaidOptions, TestMode};
+use mycelium_core::mermaid::{export_mermaid, DetailMode, MermaidOptions, TestMode};
 use mycelium_core::pipeline::run_pipeline;
+
+// Preserve the historical detailed-output assertions explicitly.
+fn full_options() -> MermaidOptions {
+    MermaidOptions {
+        detail: DetailMode::Full,
+        ..Default::default()
+    }
+}
 
 fn analyze(files: &[(&str, &str)]) -> AnalysisResult {
     let repo = tempfile::tempdir().unwrap();
@@ -212,7 +220,7 @@ fn saved_class_targets_export_construction_relationships_without_constructor_mem
         assert_eq!(result.calls.len(), 1, "{file}: {:?}", result.calls);
 
         // Act: the map can be exported with no source files present.
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
 
         // Assert: construction connects to the class itself; no synthetic member is needed.
         assert!(
@@ -223,18 +231,12 @@ fn saved_class_targets_export_construction_relationships_without_constructor_mem
             output.contains("Calls without in-scope endpoints: 0."),
             "{file}: {output}"
         );
-        assert_eq!(
-            output,
-            export_mermaid(&result, &MermaidOptions::default()).unwrap()
-        );
+        assert_eq!(output, export_mermaid(&result, &full_options()).unwrap());
         let mut reordered = result.clone();
         reordered.symbols.reverse();
         reordered.calls.reverse();
         reordered.class_diagram.as_mut().unwrap().classes.reverse();
-        assert_eq!(
-            output,
-            export_mermaid(&reordered, &MermaidOptions::default()).unwrap()
-        );
+        assert_eq!(output, export_mermaid(&reordered, &full_options()).unwrap());
     }
 }
 
@@ -250,7 +252,7 @@ fn rust_tuple_construction_targets_the_struct_even_when_it_has_an_impl() {
     )]);
 
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
 
     // Assert: both construction forms survive, with different source meanings.
     assert_eq!(result.calls.len(), 2, "{:?}", result.calls);
@@ -292,6 +294,7 @@ fn excluded_constructions_are_counted_even_with_missing_declaration_endpoints() 
             });
         let before = serde_json::to_string(&result).unwrap();
         let options = MermaidOptions {
+            detail: DetailMode::Full,
             test_paths: vec!["test".into()],
             ..Default::default()
         };
@@ -301,6 +304,7 @@ fn excluded_constructions_are_counted_even_with_missing_declaration_endpoints() 
         let kept = export_mermaid(
             &result,
             &MermaidOptions {
+                detail: DetailMode::Full,
                 keep_paths: vec!["test".into()],
                 ..options.clone()
             },
@@ -309,6 +313,7 @@ fn excluded_constructions_are_counted_even_with_missing_declaration_endpoints() 
         let included = export_mermaid(
             &result,
             &MermaidOptions {
+                detail: DetailMode::Full,
                 tests: TestMode::Include,
                 ..options
             },
@@ -361,7 +366,7 @@ fn automatically_excluded_callers_do_not_require_a_displayable_target() {
         .retain(|c| c.name != "Widget");
 
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
 
     // Assert: one production omission, one intentional test exclusion.
     assert!(
@@ -404,7 +409,7 @@ fn cpp_and_vb_object_creation_reaches_both_the_map_and_diagram() {
         // Act.
         let raw = analyser.extract_calls(&tree, source.as_bytes(), file);
         let result = analyze(&[(file, source)]);
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
 
         // Assert: extraction, resolution and display all retain the construction.
         assert_eq!(raw.len(), 1, "{file}: {raw:?}");
@@ -447,7 +452,7 @@ fn typescript_and_javascript_calls_share_one_runtime_language_family() {
             ]);
 
             // Act: export the round-tripped analysis after its source has been removed.
-            let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+            let output = export_mermaid(&result, &full_options()).unwrap();
 
             // Assert: both lookup tiers preserve each cross-language runtime connection.
             assert_eq!(
@@ -537,7 +542,7 @@ fn keeping_an_impl_does_not_restore_construction_of_a_filtered_type() {
     ]);
 
     // Act.
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
 
     // Assert: box context does not undo selection of the original class declaration.
     assert!(output.contains("Owner retained as context"), "{output}");
@@ -573,7 +578,7 @@ fn function_valued_properties_remain_possible_runtime_call_targets() {
 
     // Act.
     let result = analyze(&[("app.ts", source)]);
-    let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+    let output = export_mermaid(&result, &full_options()).unwrap();
 
     // Assert: rejecting type-only declarations must preserve ordinary callback calls.
     assert_eq!(result.calls.len(), 1, "{:?}", result.calls);
@@ -602,7 +607,7 @@ fn explicit_constructor_members_and_ordinary_methods_keep_their_call_labels() {
     ] {
         // Arrange / Act: constructor symbols already match declared members in these languages.
         let result = analyze(&[(file, source)]);
-        let output = export_mermaid(&result, &MermaidOptions::default()).unwrap();
+        let output = export_mermaid(&result, &full_options()).unwrap();
 
         // Assert: type endpoints extend export without replacing existing member endpoints.
         assert_eq!(result.calls.len(), 2, "{file}: {:?}", result.calls);

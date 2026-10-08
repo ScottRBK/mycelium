@@ -226,10 +226,16 @@ classDiagram
     class MermaidOptions {
         +path: String
         +max_classes: usize
+        +detail: DetailMode
         +tests: TestMode
         +test_paths: Vec~String~
         +keep_paths: Vec~String~
         +explain_tests: bool
+    }
+    class DetailMode {
+        <<enum>>
+        Compact
+        Full
     }
     class mermaid {
         <<module>>
@@ -241,6 +247,7 @@ classDiagram
     Class *-- Member : contains member records
     mermaid ..> ClassDiagram : reads
     mermaid ..> MermaidOptions : reads
+    MermaidOptions ..> DetailMode : selects rendering
 ```
 
 `PythonBindingMap` is `BTreeMap<String, PythonBindings>`; `PythonNameMap` is
@@ -263,8 +270,14 @@ guide for exact rules.
 
 `ExportResult` abbreviates `Result<String, ExportError>`. An older map without declarations
 reports that analysis must be rerun. Views bound class counts only; each box keeps all its members.
-Resolved relationships remain in a complete list. Calls remain heuristic; fields do not imply
-exclusive ownership.
+Compact is the default: every selected member name and visibility remains, methods use `name()`,
+and arrows group calls, construction, type dependencies, and fields separately. Connections between
+diagrams are listed separately. Source index entries and individual warnings remain in both modes.
+`--detail full` (Python `detail="full"`, Rust `DetailMode::Full`) restores the previous detailed
+Markdown bytes for the same map and selection, including signatures, keys, and the complete
+relationship list. Detail never changes saved facts or resolution. Existing Rust exhaustive options
+literals need the new `detail` field. Calls remain heuristic; fields do not imply exclusive
+ownership.
 See [Mermaid export](docs/mermaid-export.md) for coverage and checkpoint validation.
 
 ### Language Analysers
@@ -434,12 +447,16 @@ check the extracted records; a resolution fix should also check the resulting gr
 | Rust unit | Inline `#[cfg(test)]` modules | Data types, indexes, and algorithm helpers. | Yes |
 | Rust integration | `crates/mycelium-core/tests/` | Fixtures, phases, pipeline, JSON. | Yes |
 | Mermaid checkpoints | `tests/checkpoints/` | Commit-pinned external source to Markdown. | Local |
+| Checkpoint checker | `tests/test_checkpoint_exports.py` | Portable saved-map comparisons. | Yes |
 | Python bindings | `tests/test_bindings.py` | Extension API, config, progress, and exports. | Yes |
 | Wheel install | `tests/check_wheel.py` | Installed bindings and uvx without Rust. | Yes |
 
 ```bash
 # All Rust tests, including fixture-based full-pipeline checks
 cargo test --workspace
+
+# Portable native checkpoint comparisons; run after cargo builds the CLI
+python3 -m unittest tests.test_checkpoint_exports -v
 
 # Focused examples while iterating
 cargo test -p mycelium-core --test test_pipeline
@@ -462,9 +479,10 @@ their relationships change. When modifying third-party library usage, consult th
 
 ## CI/CD
 
-- `.github/workflows/ci.yml`: pushes and pull requests to `master` run Rust tests, Clippy,
-  formatting checks, and build one wheel on Ubuntu with Python 3.12. `test-wheels.yml` installs
-  that same artifact on Python 3.12, 3.13, and 3.14, outside the checkout and without Rust on PATH.
+- `.github/workflows/ci.yml`: pushes and pull requests to `master` run Rust tests,
+  native checkpoint comparisons, Clippy, formatting checks, and build one wheel on Ubuntu with
+  Python 3.12. `test-wheels.yml` installs that same artifact on Python 3.12, 3.13, and 3.14,
+  outside the checkout and without Rust on PATH.
 - `.github/workflows/release.yml`: `v*` tags build Linux and macOS wheels for x86_64 and aarch64,
   Windows wheels for x86_64, and a source distribution. Publication to PyPI as `mycelium-map`
   requires each platform's wheel to pass `test-wheels.yml` on all three Python versions.
