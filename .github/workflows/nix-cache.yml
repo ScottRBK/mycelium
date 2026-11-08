@@ -1,0 +1,75 @@
+name: Nix Cache
+
+# Publishes the Nix-built CLI and the `nix flake check` closures to Cachix so
+# contributor dev shells and later CI jobs substitute instead of rebuilding the
+# tree-sitter grammar set and the Rust dependency graph.
+#
+# Pull requests never publish here: forks have no token, and unmerged artifacts
+# should not land in a shared cache.
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch: null
+
+permissions: {}
+
+concurrency:
+  group: nix-cache
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Forks never have the token and must not publish; a manual dispatch only
+    # publishes when it runs on the default branch of the upstream repository.
+    if: >-
+      github.repository == 'ScottRBK/mycelium' &&
+      (github.event_name == 'push' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    # Cold cache builds the Rust dependency graph plus the check environments
+    # (cargo test, clippy, and the Python module with its extension).
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      # This job receives the CACHIX_AUTH_TOKEN write secret, so the actions it
+      # runs are pinned by commit SHA rather than by mutable tag. The existing
+      # Rust/Python workflows use tags; that is left alone here on purpose.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      # Fail loudly instead of silently "publishing" nothing: cachix-action
+      # falls back to a read-only pull when the token is absent.
+      - name: Check CACHIX_AUTH_TOKEN
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+        run: |
+          if [ -z "$CACHIX_AUTH_TOKEN" ]; then
+            echo "::error::repository secret CACHIX_AUTH_TOKEN is not set"
+            exit 1
+          fi
+
+      # Installs a post-build hook, so every store path built below is pushed
+      # as it is produced.
+      - name: Publish to Cachix
+        uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
+        with:
+          name: mycelium
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Build and publish the CLI
+        run: nix build .#mycelium-map
+
+      # The check closures are the valuable half of the cache: they carry the
+      # compiled grammars, the cargo test target set and the Python extension
+      # that every later `nix flake check` would otherwise rebuild from scratch.
+      - name: Build and publish the check environments
+        run: nix flake check
