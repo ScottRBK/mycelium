@@ -275,6 +275,9 @@ pytest tests/test_bindings.py -v
 cargo run -p mycelium-cli -- analyze <path>
 ```
 
+With [Nix](docs/nix.md): `nix develop` for a locked toolchain, `nix build` for the CLI, and
+`nix flake check` for formatting, lints, tests and a deterministic-export check.
+
 ## Releasing
 
 Releases are automated via GitHub Actions. Push a semver tag to trigger a release:
@@ -288,3 +291,7 @@ This will:
 1. Build binary wheels for Linux, macOS, and Windows
 2. Build a source distribution
 3. Publish all to PyPI
+
+Docs-only touch for cache-stability check.
+
+Docs-only touch.
