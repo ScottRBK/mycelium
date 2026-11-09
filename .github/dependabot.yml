@@ -1,0 +1,42 @@
+# Dependabot version updates for the flake inputs and pinned Actions.
+#
+# Python dependencies are deliberately NOT listed here. `pyproject.toml` declares
+# its runtime requirements as ranges (click>=8.1, rich>=13.0) and `uv.lock` pins
+# the resulting environment, but the shipped artifact is a wheel built by maturin
+# and published to PyPI from whatever resolution is current at tag time. A
+# scheduled bump would therefore change what lands inside a released wheel on a
+# timer, without a review of the resolution - which is a worse trade than the
+# manual `uv lock` refresh this leaves in place.
+#
+# If you would rather have automatic Python bumps, a `uv` ecosystem entry is a
+# one-line addition below; the trade-off is just that the wheel contents then
+# track a scheduled job rather than a reviewed change.
+#
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+version: 2
+updates:
+  # nix flake inputs: flake.nix and flake.lock
+  - package-ecosystem: "nix"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Group all input bumps into one PR per week so a routine refresh costs one
+    # review rather than one per input. flake-parts and git-hooks-nix are
+    # follows-linked onto nixpkgs, so bumping them together is also the only way
+    # to test a compatible set.
+    groups:
+      flake-inputs:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+
+  # GitHub Actions, including the SHA-pinned actions in the cache-publishing job.
+  - package-ecosystem: "github-actions"
+    directory: "/.github/workflows"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
