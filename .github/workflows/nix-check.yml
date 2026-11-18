@@ -1,0 +1,48 @@
+name: Nix Check
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  flake-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      # Rebuild each check output even if a binary cache has the same derivation.
+      # Dependencies remain eligible for substitution.
+      - name: Build check derivations
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_list=$(nix eval --raw .#checks.x86_64-linux \
+            --apply 'x: builtins.concatStringsSep "\n" (builtins.attrNames x)')
+          mapfile -t check_names <<< "$check_list"
+          if ((${#check_names[@]} == 0)); then
+            echo "::error::No x86_64-linux flake checks were found"
+            exit 1
+          fi
+          targets=()
+          for check_name in "${check_names[@]}"; do
+            targets+=(".#checks.x86_64-linux.${check_name}")
+          done
+          nix build --rebuild --no-link "${targets[@]}"
+
+      - name: Check flake
+        run: nix flake check

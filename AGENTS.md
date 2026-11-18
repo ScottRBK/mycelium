@@ -409,6 +409,11 @@ tests/
   fixtures/             Source repositories shared by Rust and Python tests
   test_bindings.py      Python binding smoke tests
 vendor/                 Vendored VB.NET grammar
+flake.nix               Nix package, dev shell and checks
+default.nix             nix-build flake-compat entry point
+shell.nix               nix-shell flake-compat entry point
+docs/
+  nix.md                 Nix packaging and development guide
 ```
 
 Keep analysis logic in `mycelium-core`; both command-line interfaces should remain thin wrappers.
@@ -434,6 +439,40 @@ mycelium-map analyze tests/fixtures/csharp_simple -o /tmp/mycelium-map.json --ve
 Rebuild with `maturin develop --release` after Rust changes before testing the Python interface.
 Python requires 3.12 or newer. Maturin builds the extension as `mycelium._mycelium_rust`.
 The extension uses `abi3-py312`: one wheel per platform supports standard CPython 3.12+.
+
+### With Nix
+
+The flake is the reproducible path and needs no host Rust toolchain. See [docs/nix.md](docs/nix.md)
+for the full guide and the reasoning behind these choices.
+
+```bash
+nix flake check            # fmt, clippy, cargo test, python bindings, analysis smoke check
+nix build                  # result/bin/mycelium-map
+nix develop                # locked cargo/rustc/clippy/rustfmt + cc + python3 + hooks
+nix fmt                    # format the tree
+```
+
+Rules that are easy to break:
+
+- `cargoHash` is **not** used by this crane release — integrity comes from the `checksum`
+  fields in `Cargo.lock`. Do not add a `cargoHash`; it is silently ignored.
+- Regenerate nothing by hand: a `Cargo.lock` change is picked up automatically, and a stale
+  hash fails loudly as a mismatch.
+- The source filter is a **deny-list** and must keep `vendor/tree-sitter-vb-dotnet` (a Cargo
+  path dependency) and `tests/fixtures/` (read at test runtime via `CARGO_MANIFEST_DIR`).
+  Dropping either breaks the build or the tests, not both.
+- `clippy` deliberately mirrors CI (`--workspace -- -D warnings`). Do not add `--all-targets`
+  to the flake check: it fails on dead code in the shared `tests/common` helpers, which is a
+  stricter gate than CI enforces.
+- `aarch64-linux` is listed but **unverified** — no builder was available. Treat
+  `nix flake check`'s "omitted these incompatible systems" warning as real.
+- `aarch64-darwin` is **deliberately excluded**, not merely unverified. The Python module's
+  install phase copies `lib_mycelium_rust.so` (cargo emits `.dylib` on macOS) and runs GNU
+  `strip`, which cannot read Mach-O, so the flake check failed on a platform it advertised.
+  Restore it only with a cross-platform copy, a `strip` that handles Mach-O, and a darwin
+  builder to prove it. `x86_64-darwin` stays omitted as deprecated upstream.
+- The version is read at eval time from `crates/mycelium-cli/Cargo.toml`. Never add a version
+  literal to `flake.nix`.
 
 ## Test Philosophy
 
