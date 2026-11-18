@@ -25,8 +25,8 @@ jobs:
             experimental-features = nix-command flakes
             accept-flake-config = true
 
-      # Rebuild each check output even if a binary cache has the same derivation.
-      # Dependencies remain eligible for substitution.
+      # Build each check output. Dependencies substitute from cache.nixos.org where
+      # available; the checks themselves compile on the runner.
       - name: Build check derivations
         shell: bash
         run: |
@@ -42,7 +42,7 @@ jobs:
           for check_name in "${check_names[@]}"; do
             targets+=(".#checks.x86_64-linux.${check_name}")
           done
-          nix build --rebuild --no-link "${targets[@]}"
+          nix build --no-link "${targets[@]}"
 
       - name: Check flake
         run: nix flake check
