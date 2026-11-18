@@ -275,6 +275,9 @@ pytest tests/test_bindings.py -v
 cargo run -p mycelium-cli -- analyze <path>
 ```
 
+With [Nix](docs/nix.md): `nix develop` for a locked toolchain, `nix build` for the CLI, and
+`nix flake check` for formatting, lints, tests and a deterministic-export check.
+
 ## Releasing
 
 Releases are automated via GitHub Actions. Push a semver tag to trigger a release:

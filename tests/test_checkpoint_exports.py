@@ -1,6 +1,7 @@
 """Portable checkpoint checks using the locally built native CLI; no external repositories."""
 
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -8,7 +9,14 @@ from pathlib import Path
 
 from tests.checkpoints.check_mermaid import check_compact
 
-BINARY = Path(__file__).resolve().parents[1] / "target/debug/mycelium-map"
+# Overridable so the suite can run against a CLI built somewhere other than
+# target/debug (e.g. a Nix store path). Defaults to the cargo build output, so
+# existing invocations and CI are unaffected. check_mermaid.py already exposes
+# the same idea as --binary.
+BINARY = Path(
+    os.environ.get("MYCELIUM_BIN")
+    or Path(__file__).resolve().parents[1] / "target/debug/mycelium-map"
+)
 
 
 class CheckpointExportTests(unittest.TestCase):
