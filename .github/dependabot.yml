@@ -1,0 +1,41 @@
+# Dependabot version updates for the flake inputs and pinned Actions.
+#
+# Python dependencies are deliberately not configured here. `pyproject.toml`
+# declares runtime ranges for click and rich; pip resolves those when the package
+# is installed. `uv.lock` pins the development and test environment, but the
+# release workflow builds the wheel with maturin and Cargo.lock, so a uv update
+# changes the dev/test resolution rather than the released wheel contents.
+#
+# To automate uv.lock refreshes, add a normal uv update block with an ecosystem,
+# directory, and schedule.
+#
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+version: 2
+updates:
+  # Nix updates flake.lock; refs declared in flake.nix remain manual.
+  - package-ecosystem: "nix"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Group all input bumps into one PR per week so a routine refresh costs one
+    # review rather than one per input. flake-parts and git-hooks-nix are
+    # follows-linked onto nixpkgs, so bumping them together is also the only way
+    # to test a compatible set.
+    groups:
+      flake-inputs:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+
+  # GitHub Actions. Branch refs such as dtolnay/rust-toolchain@stable and
+  # pypa/gh-action-pypi-publish@release/v1 float and do not get version-bump PRs;
+  # changing those refs to pinned versions is a manual choice.
+  - package-ecosystem: "github-actions"
+    directory: "/.github/workflows"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
