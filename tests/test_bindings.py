@@ -29,14 +29,14 @@ def test_csharp_compact_default_full_and_invalid_detail(tmp_path):
     assert default.count("        +Run()\n") == 3
     assert default == export_mermaid(result, detail="compact")
     full = export_mermaid(result, detail="full")
-    assert full == (FIXTURES / "compact_csharp.full.md").read_text()
+    assert full == (FIXTURES / "compact_csharp.full.md").read_text(encoding="utf-8")
     for args, expected in [([], default), (["--detail", "compact"], default),
                            (["--detail", "full"], full)]:
         invocation = CliRunner().invoke(
             cli, ["export", str(saved), "-o", str(output), *args]
         )
         assert invocation.exit_code == 0, invocation.output
-        assert output.read_text() == expected
+        assert output.read_text(encoding="utf-8") == expected
     with pytest.raises(ValueError, match="detail must be compact or full"):
         export_mermaid(result, detail="invalid")
     rejected = CliRunner().invoke(
@@ -44,7 +44,7 @@ def test_csharp_compact_default_full_and_invalid_detail(tmp_path):
     )
     assert rejected.exit_code == 2
     assert "--detail" in rejected.output
-    assert output.read_text() == full
+    assert output.read_text(encoding="utf-8") == full
     assert before == json.dumps(result, sort_keys=True)
 
 
