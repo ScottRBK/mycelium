@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "mycelium-map"
-version = "1.0.0"
+version = "0.5.0"
 description = "Static analysis tool that maps the hidden network of connections in codebases"
 readme = "README.md"
 requires-python = ">=3.12"

@@ -145,7 +145,7 @@ The JSON output contains these top-level sections:
   "repo_name": "my-project",
   "repo_path": "/absolute/path",
   "analysed_at": "2026-02-05T18:33:12Z",
-  "mycelium_version": "1.0.0",
+  "mycelium_version": "0.5.0",
   "commit_hash": "a1b2c3d4e5f6",
   "analysis_duration_ms": 42.3,
   "phase_timings": { "structure": 0.004, "parsing": 0.001, ... }
@@ -283,8 +283,8 @@ With [Nix](docs/nix.md): `nix develop` for a locked toolchain, `nix build` for t
 Releases are automated via GitHub Actions. Push a semver tag to trigger a release:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v0.5.0
+git push origin v0.5.0
 ```
 
 This will:
