@@ -62,7 +62,7 @@ jobs:
           args: --release --locked --out dist -i python3.12
           manylinux: auto
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-x86_64-unknown-linux-gnu
           path: dist/*.whl
