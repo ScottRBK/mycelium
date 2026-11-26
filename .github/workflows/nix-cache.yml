@@ -43,7 +43,7 @@ jobs:
       # v31.11.3: the bundled installer certificate bundle was updated to drop
       # compromised certificates. Pinned by SHA for the same reason as above.
       - name: Install Nix
-        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
+        uses: cachix/install-nix-action@bb0495a1086c46893eee56f32fd192dfe4a15bb9 # v32.0.0
         with:
           # Accept the top-level nixConfig in flake.nix, which declares this cache's
           # substituter and public signing key.
